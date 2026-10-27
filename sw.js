@@ -1,14 +1,15 @@
-/* AutoCoach Lift — service worker (v4).
+/* AutoCoach Lift — service worker (v5).
    - Pre-caches the app shell so the PWA installs and runs fully offline.
    - Network-first for same-origin GETs (updates arrive as soon as you're online), with a
      cache fallback when offline or when the network is slow (3.5 s).
-   - Cross-origin requests (the Gemini API) and non-GET requests are never touched.
+   - Cross-origin requests (the Gemini API and your Supabase project — sign-in and cloud sync) and
+     non-GET requests are never touched, so sync traffic always goes straight to the network.
    - The page can send {type:'SKIP_WAITING'} to activate a freshly installed worker.
    - Rest-timer alerts: the page posts {type:'REST_SCHEDULE', end, title, label, icon}; the worker waits
      (inside event.waitUntil, so the browser keeps it alive for a few minutes at most) and then shows a system
      notification — unless the app is already visible. {type:'REST_CANCEL'} withdraws it. This is best-effort:
      a browser may still suspend the worker. Guaranteed background delivery would need a push server. */
-const CACHE = 'autocoach-lift-v4';
+const CACHE = 'autocoach-lift-v5';
 const SHELL = ['./', './index.html'];
 const SLOW_MS = 3500;
 
