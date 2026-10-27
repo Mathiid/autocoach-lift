@@ -519,6 +519,27 @@ a.btn{text-decoration:none}
 .tier-pv{margin-top:6px;line-height:1.45}
 .kv.k4{grid-template-columns:repeat(2,1fr)}
 .kv.k4 b{font-variant-numeric:tabular-nums}
+/* ---- cloud sync ---- */
+.top-actions{display:flex;align-items:center}
+.icon-btn{position:relative}
+.cdot{display:block;position:absolute;right:8px;top:8px;width:10px;height:10px;border-radius:50%;background:var(--dim);border:2px solid var(--bg)}
+.cdot.ok{background:var(--ok)}
+.cdot.sy{background:var(--info);animation:cpulse 1s ease-in-out infinite}
+.cdot.off,.cdot.warn{background:var(--warn)}
+.cdot.bad{background:var(--bad)}
+@keyframes cpulse{50%{opacity:.3}}
+.cstat{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:13.5px;font-weight:700}
+.cstat .cdot,.cloudcard .cdot{position:static;display:inline-block;flex:none;border:0;width:9px;height:9px}
+.cloudcard{background:var(--card2);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px}
+.cloud-err{min-height:18px;font-size:13px;line-height:1.35;color:var(--bad);margin:2px 0 10px}
+.cloud-err.ok{color:var(--ok)}
+.or{text-align:center;color:var(--dim);font-size:12px;margin:12px 0 10px}
+.stackb{display:flex;flex-direction:column;gap:8px;width:100%}
+.guide ol{padding-left:20px;margin:8px 0}
+.guide li{margin:8px 0}
+.guide code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:12px;word-break:break-all}
+.sqlbox{background:var(--bg);border:1px solid var(--line2);border-radius:12px;padding:10px 12px;font:11.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;overflow:auto;max-height:260px;color:#dcdcdc;margin:0;-webkit-user-select:text;user-select:text}
+.cintro{margin:0 0 14px}
 </style>
 </head>
 <body>
@@ -528,7 +549,8 @@ a.btn{text-decoration:none}
       <span class="logo" id="logoDuck" aria-hidden="true"></span>
       <span>AutoCoach <b>Lift</b></span>
     </div>
-    <button class="icon-btn" data-action="open-settings" aria-label="Settings" id="gearBtn"></button>
+    <div class="top-actions"><button class="icon-btn" data-action="open-cloud" aria-label="Cloud sync" id="cloudBtn"></button>
+    <button class="icon-btn" data-action="open-settings" aria-label="Settings" id="gearBtn"></button></div>
   </header>
   <main id="view"></main>
 </div>
@@ -541,8 +563,24 @@ a.btn{text-decoration:none}
 /* =====================================================================
    AutoCoach Lift — single-file PWA
    Dynamic weight engine + auto-regulation + Coach Ducky (Gemini AI rubber-duck trainer).
-   Everything is stored in localStorage (key: autocoach-lift:v1).
+   Everything is stored in localStorage (key: autocoach-lift:v1) — the offline working copy. Sign in under
+   the cloud button (top right) to mirror it to your own Supabase account so every device stays in step.
    ===================================================================== */
+/* ======================================================================
+   CLOUD SYNC SETUP (optional — the app works fully offline without it)
+   Sign-in + syncing across devices uses a free Supabase project (supabase.com).
+   Quick steps (the in-app “Cloud sync → Setup guide” has the SQL to copy):
+     1. Create a Supabase project. Project Settings → API: copy the Project URL and the publishable (anon) key.
+     2. SQL Editor: run the script from the in-app Setup guide (creates one table with row-level security).
+     3. Authentication → URL Configuration: set Site URL + Redirect URLs to the https address you host this file at.
+     4. Paste the two values below. (Google sign-in: Authentication → Providers → Google.)
+   Both values are public by design; your data is protected by sign-in and row-level security.
+   ====================================================================== */
+const AUTOCOACH_CLOUD = {
+  url: '',        // e.g. 'https://abcdxyz.supabase.co'
+  anonKey: ''     // e.g. 'sb_publishable_…' or the long 'eyJ…' anon key
+};
+
 (() => {
 'use strict';
 
@@ -572,6 +610,8 @@ const fmtTime = t => new Date(t).toLocaleTimeString([], { hour: '2-digit', minut
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
 const IC = {
+  cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  cloudoff: '<path d="m2 2 20 20"/><path d="M5.78 5.78A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.3-.19"/><path d="M21.53 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7 7 0 0 0 10 5.07"/>',
   dumbbell: '<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
   target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
@@ -674,7 +714,7 @@ let S = loadState();
 function loadState() {
   const d = defaults();
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = arguments.length ? arguments[0] : localStorage.getItem(LS_KEY);
     if (raw) {
       const o = JSON.parse(raw);
       if (o && typeof o === 'object') {
@@ -724,6 +764,7 @@ function save(now) {
 }
 function persist() {
   clearTimeout(saveTimer);
+  try { syncOnPersist(); } catch (e) { /* sync layer not ready yet */ }
   try { localStorage.setItem(LS_KEY, JSON.stringify(S)); }
   catch (e) { toast('Storage is full or blocked — changes may not persist', 'err', 4000); }
 }
@@ -2916,6 +2957,7 @@ function render(keepScroll) {
   const views = { home: viewHome, train: viewTrain, programs: viewPrograms, lifts: viewLifts, run: viewRun, sched: viewSched, coach: viewCoach, history: viewHistory };
   $('#view').innerHTML = (views[S.tab] || viewHome)();
   $('#gearBtn').innerHTML = icon('gear', 22);
+  renderCloudBtn();
   renderTabbar();
   if (keepScroll) window.scrollTo(0, y);
   if (S.tab === 'coach') scrollChat();
@@ -3048,13 +3090,13 @@ function importJSONText(text) {
   keep('logs', l => Number.isFinite(Number(l.t)) && Array.isArray(l.exercises));
   keep('runLogs', r => Number.isFinite(Number(r.t)));
   const counts = `${Object.keys(o.lifts).length} lifts · ${plural((o.logs || []).length, 'workout')} · ${plural((o.runLogs || []).length, 'run')} · ${plural(o.programs.length, 'program')}`;
-  if (!confirm(`Replace everything on this device with this backup?\n\n${counts}${dropped ? `\n(${plural(dropped, 'damaged item')} will be skipped)` : ''}\n\nThis cannot be undone. Export first if you are unsure.`)) return false;
+  if (!confirm(`Replace everything on this device with this backup?\n\n${counts}${dropped ? `\n(${plural(dropped, 'damaged item')} will be skipped)` : ''}\n\nThis cannot be undone. Export first if you are unsure.${syncImportNote()}`)) return false;
   let prev = null; try { prev = localStorage.getItem(LS_KEY); } catch (e) { /* ignore */ }
   const key = S.settings.apiKey;
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(o));
     S = loadState(); S.settings.apiKey = key; S.session = null; S.timer = null; stopTick(); renderTimer();
-    save(true); closeModal(true); render(); window.scrollTo(0, 0);
+    syncAllowMass(true); save(true); syncAllowMass(false); closeModal(true); render(); window.scrollTo(0, 0);
     toast(`Backup restored: ${counts}`, 'ok', 3800);
     return true;
   } catch (err) {
@@ -3076,8 +3118,842 @@ function pickBackup() {
 }
 function backupRowHTML() {
   const t = S.lastBackup ? new Date(S.lastBackup).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : null;
-  return `<section class="card bk"><div class="row between gap wrap"><div style="min-width:0"><b>Backup</b><div class="muted xs">Saved on this device only · ${t ? 'last export ' + esc(t) : 'no export yet'}</div></div>
+  return `<section class="card bk"><div class="row between gap wrap"><div style="min-width:0"><b>Backup</b><div class="muted xs">Saved on this device${sync.meta && sync.meta.uid ? ' and synced to your cloud account' : ' only'} · ${t ? 'last export ' + esc(t) : 'no export yet'}</div></div>
     <div class="row gap"><button class="btn sm" data-action="export-json">Export JSON</button><button class="btn sm" data-action="import-json">Import JSON</button></div></div></section>`;
+}
+
+/* =====================================================================
+   Cloud sync (Supabase) — optional sign-in + cross-device sync.
+   localStorage stays the working copy and the offline cache; the cloud holds a per-item,
+   last-writer-wins mirror (one row per lift, program, workout, setting…). No SDK: plain fetch
+   against Supabase Auth and PostgREST. Everything below is inert until a project is configured.
+   ===================================================================== */
+const CLOUD_LS = 'autocoach-lift:cloud', AUTH_LS = 'autocoach-lift:auth', SYNC_LS = 'autocoach-lift:sync';
+const SYNC_LOCAL_SETTINGS = ['notify', 'notifyAsked', 'bgAudio', 'keepAwake', 'modelMig'];   // device-specific: never synced
+const SYNC_DATA = /^(program|log|runlog|lift|cue|pm):/;                                    // the items that are "your data" (as opposed to settings fields)
+const SYNC_LOCAL_SCHED = ['view', 'day'];                                                     // which days this screen shows
+const jget = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
+const jset = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+const freshMeta = (uid, email) => ({ v: 1, uid: uid || null, email: email || '', h: {}, t: {}, dirty: {}, cursor: '', skew: 0, skewSet: false, last: 0, syncKey: true });
+const sync = {
+  cfg: null, auth: null, meta: null,
+  status: 'off', err: '', busy: false, again: false, needPull: false,
+  queue: [], pendingCursor: null, alert: null, massOK: false, mergeFirst: false, rebase: false,
+  ws: null, live: false, wsRetry: 0, retryN: 0, linking: false
+};
+
+/* ---- config: constants in the file win; otherwise what was typed into the app ---- */
+function cloudCfg() {
+  const f = (typeof AUTOCOACH_CLOUD === 'object' && AUTOCOACH_CLOUD) || {}, l = jget(CLOUD_LS) || {};
+  const url = String(f.url || l.url || '').trim().replace(/\/+$/, ''), key = String(f.anonKey || l.key || '').trim();
+  const okUrl = /^https:\/\/[^\s/]+$/i.test(url) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url);
+  return okUrl && key.length > 20 ? { url, key, fromFile: !!(f.url && f.anonKey) } : null;
+}
+function loadMeta() {
+  const m = jget(SYNC_LS);
+  if (!m || typeof m !== 'object' || !m.h || !m.t) return freshMeta();
+  m.dirty = m.dirty && typeof m.dirty === 'object' ? m.dirty : {};
+  m.syncKey = m.syncKey !== false; m.skew = Number(m.skew) || 0; m.cursor = String(m.cursor || '');
+  return m;
+}
+const saveMeta = () => { if (sync.meta) jset(SYNC_LS, sync.meta); };
+const cloudNow = () => Date.now() + ((sync.meta && sync.meta.skew) || 0);      // server-corrected clock, so a wrong phone clock cannot win every conflict
+const pendingCount = () => Object.keys((sync.meta && sync.meta.dirty) || {}).length;
+const parseTs = s => Date.parse(String(s || '').replace(/(\.\d{3})\d+/, '$1'));
+
+/* ---- hashing: canonical JSON (key order does not matter — Postgres jsonb reorders keys) ---- */
+function canon(v) {
+  if (v === null || v === undefined) return 'null';
+  if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+  if (typeof v === 'object') return '{' + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+  if (typeof v === 'number') return Number.isFinite(v) ? String(v) : 'null';
+  return JSON.stringify(v);
+}
+function hashStr(str) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36) + '.' + str.length.toString(36);
+}
+const hashOf = v => hashStr(canon(v));
+
+/* ---- what is synced: one flat key per item ---- */
+function syncSnapshot() {
+  const m = new Map(), st = S.settings;
+  Object.keys(st).forEach(k => { if (SYNC_LOCAL_SETTINGS.includes(k) || (k === 'apiKey' && sync.meta && !sync.meta.syncKey)) return; m.set('set:' + k, st[k]); });
+  Object.keys(S.profile || {}).forEach(k => m.set('prof:' + k, S.profile[k]));
+  Object.keys(S.run || {}).forEach(k => m.set('run:' + k, S.run[k]));
+  Object.keys(S.sched || {}).forEach(k => { if (!SYNC_LOCAL_SCHED.includes(k)) m.set('sched:' + k, S.sched[k]); });
+  Object.keys(S.lifts || {}).forEach(k => m.set('lift:' + k, S.lifts[k]));
+  Object.keys(S.cues || {}).forEach(k => m.set('cue:' + k, S.cues[k]));
+  Object.keys(S.prog || {}).forEach(k => m.set('pm:' + k, S.prog[k]));
+  S.programs.forEach(p => { if (p && typeof p.id === 'string') m.set('program:' + p.id, p); });
+  S.logs.forEach(l => { if (l && typeof l.id === 'string') m.set('log:' + l.id, l); });
+  S.runLogs.forEach(r => { if (r && typeof r.id === 'string') m.set('runlog:' + r.id, r); });
+  m.set('active', S.activeProgramId || null);
+  return m;
+}
+const upsertById = (arr, id, val, del) => {
+  const i = arr.findIndex(x => x && x.id === id);
+  if (del) { if (i >= 0) arr.splice(i, 1); return; }
+  if (i >= 0) arr[i] = val; else arr.push(val);
+};
+function applyKey(key, val, del) {
+  const i = key.indexOf(':'), pre = i < 0 ? key : key.slice(0, i), id = i < 0 ? '' : key.slice(i + 1);
+  switch (pre) {
+    case 'set': if (!del && !SYNC_LOCAL_SETTINGS.includes(id)) S.settings[id] = val; break;
+    case 'prof': if (!del) S.profile[id] = val; break;
+    case 'run': if (!del) S.run[id] = val; break;
+    case 'sched': if (!del && !SYNC_LOCAL_SCHED.includes(id)) S.sched[id] = val; break;
+    case 'lift': if (del) delete S.lifts[id]; else S.lifts[id] = val; break;
+    case 'cue': if (del) delete S.cues[id]; else S.cues[id] = val; break;
+    case 'pm': if (del) delete S.prog[id]; else S.prog[id] = val; break;
+    case 'program': upsertById(S.programs, id, val, del); break;
+    case 'log': upsertById(S.logs, id, val, del); break;
+    case 'runlog': upsertById(S.runLogs, id, val, del); break;
+    case 'active': S.activeProgramId = del ? null : (val || null); break;
+    default: break;
+  }
+}
+/** Two devices improved the same lift while apart: keep the newer record, keep every history point from both. */
+function mergeLift(a, b) {
+  const lastT = x => Math.max(0, ...((x && x.history) || []).map(h => Number(h.t) || 0));
+  const base = lastT(b) >= lastT(a) ? b : a, other = base === b ? a : b;
+  const out = JSON.parse(JSON.stringify(base)), seen = new Set(), hist = [];
+  [].concat((base && base.history) || [], (other && other.history) || []).forEach(h => { const k = canon(h); if (!seen.has(k)) { seen.add(k); hist.push(h); } });
+  hist.sort((x, y) => (Number(x.t) || 0) - (Number(y.t) || 0));
+  out.history = hist.slice(-300);
+  return out;
+}
+
+/* ---- change tracking: compare the current data with what the cloud was last told ---- */
+const logHash = new WeakMap();
+function syncHash(k, v, full) {
+  if (v && typeof v === 'object' && k.startsWith('log:')) {          // a finished workout never changes: remember its hash (a full check on every sync still re-reads it)
+    let h = full ? null : logHash.get(v);
+    if (!h) { h = hashOf(v); logHash.set(v, h); }
+    return h;
+  }
+  return hashOf(v);
+}
+function syncScan(full) {
+  const m = sync.meta; if (!m || !m.uid) return false;
+  const snap = syncSnapshot(), now = cloudNow(); let changed = false;
+  snap.forEach((v, k) => {
+    const h = syncHash(k, v, full);
+    if (m.h[k] === h) return;
+    if (sync.rebase) { m.h[k] = h; if (!(k in m.t)) m.t[k] = 0; return; }          // app start: adopt load-time normalisation without calling it an edit
+    m.h[k] = h; m.t[k] = now; m.dirty[k] = 1; changed = true;
+  });
+  const missing = [];
+  Object.keys(m.h).forEach(k => {
+    if (snap.has(k) || m.h[k] === null) return;
+    if (k === 'set:apiKey' && !m.syncKey) return;
+    missing.push(k);
+  });
+  sync.alert = null;
+  if (missing.length) {
+    // Settings and profile fields always exist (as defaults), so only real data counts: if at least half of everything
+    // you have stored vanishes in one step it looks like lost browser data, not deletions — ask before telling the cloud.
+    const miss = missing.filter(k => SYNC_DATA.test(k)), known = Object.keys(m.h).filter(k => m.h[k] !== null && SYNC_DATA.test(k)).length;
+    if (!sync.massOK && miss.length >= 3 && miss.length >= known * 0.5) sync.alert = { kind: 'missing', keys: missing, n: miss.length };
+    else missing.forEach(k => { m.h[k] = null; m.t[k] = now; m.dirty[k] = 1; changed = true; });
+  }
+  return changed;
+}
+function syncOnPersist() {
+  if (!sync.meta || !sync.meta.uid) return;
+  let changed = false;
+  try { changed = syncScan(); } catch (e) { console.warn('sync scan failed', e); }
+  if (changed) { saveMeta(); syncSoon(); }
+  if (sync.alert) { renderCloudBtn(); setTimeout(syncAttention, 400); }
+}
+function syncSoon(ms) {
+  renderCloudBtn();
+  if (!sync.auth || !sync.cfg) return;
+  clearTimeout(sync.pushT); sync.pushT = setTimeout(() => syncRun('edit'), ms == null ? 2500 : ms);
+}
+function syncAllowMass(on) { sync.massOK = !!on; }
+
+/* ---- applying changes that came from other devices ---- */
+function syncUIBusy() {
+  const a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && !a.closest('#modal-root')) return true;     // never re-render under someone's thumb
+  if (modalCtx && !(modalCtx.actions && modalCtx.actions.__cloud)) return true;                      // an editor is open
+  return false;
+}
+function syncApplyQueue() {
+  clearTimeout(sync.applyT);
+  if (!sync.queue.length) { if (sync.pendingCursor) { sync.meta.cursor = sync.pendingCursor; sync.pendingCursor = null; saveMeta(); } return 0; }
+  if (syncUIBusy()) { sync.applyT = setTimeout(syncApplyQueue, 1500); return 0; }
+  const rows = sync.queue.splice(0), n = syncApplyRows(rows);
+  if (sync.pendingCursor) { sync.meta.cursor = sync.pendingCursor; sync.pendingCursor = null; }
+  saveMeta();
+  if (n) { save(true); render(true); }
+  return n;
+}
+function syncApplyRows(rows) {
+  const m = sync.meta, snap = syncSnapshot(), applied = [];
+  let normalise = false;
+  rows.forEach(r => {
+    const k = String(r.key || ''), rt = Number(r.t) || 0, lt = m.t[k] || 0, del = !!r.deleted;
+    const rh = del ? null : hashOf(r.value);
+    if (rt < lt) return;                                           // this device's version is newer; it will win when pushed
+    const same = k in m.h ? m.h[k] === rh : (del && !snap.has(k));
+    if (same) { m.t[k] = rt; delete m.dirty[k]; if (!(k in m.h)) m.h[k] = rh; return; }
+    if (del && !(k in m.h) && !snap.has(k)) { m.h[k] = null; m.t[k] = rt; return; }
+    if (k === 'set:apiKey' && !del && !r.value && S.settings.apiKey && sync.mergeFirst) { m.t[k] = cloudNow(); m.dirty[k] = 1; return; }   // first link: never blank a key typed on this device
+    let val = r.value;
+    if (k.startsWith('lift:') && !del && m.dirty[k] && snap.has(k)) {    // both sides changed since they last met
+      val = mergeLift(snap.get(k), r.value); m.t[k] = cloudNow(); m.dirty[k] = 1;
+    } else { m.t[k] = rt; delete m.dirty[k]; }
+    applyKey(k, val, del);
+    applied.push(k);
+    if (/^(set|prof|run|sched):/.test(k)) normalise = true;
+  });
+  if (!applied.length) return 0;
+  S.logs.sort((a, b) => (b.t || 0) - (a.t || 0));
+  S.runLogs.sort((a, b) => (b.t || 0) - (a.t || 0));
+  if (normalise) {                                                  // run the same checks a fresh load does (units, plates, ranges…)
+    const keep = { session: S.session, timer: S.timer, coach: S.coach, tab: S.tab, lastBackup: S.lastBackup };
+    S = loadState(JSON.stringify(S)); Object.assign(S, keep);
+  }
+  if (S.activeProgramId && !getProgram(S.activeProgramId)) S.activeProgramId = S.programs[0] ? S.programs[0].id : null;
+  const ses = S.session;
+  if (ses && !sessionHasLogged(ses)) {                              // an untouched draft for a day another device already finished
+    const p = getProgram(ses.programId);
+    if (!p || (p.cycle || 1) !== (ses.cycle || 1) || doneKeys(p).has(skey(ses.b, ses.w, ses.d))) S.session = null;
+  }
+  const snap2 = syncSnapshot();
+  applied.forEach(k => { if (snap2.has(k)) m.h[k] = hashOf(snap2.get(k)); else if (!(k in m.h) || m.h[k] !== null) m.h[k] = null; });
+  return applied.length;
+}
+
+/* ---- network ---- */
+class CloudErr extends Error { constructor(msg, status, code, net) { super(msg); this.status = status || 0; this.code = code || ''; this.net = !!net; } }
+async function cloudFetch(url, opts) {
+  opts = opts || {};
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), opts.timeout || 20000);
+  try { return await fetch(url, { method: opts.method || 'GET', headers: opts.headers, body: opts.body, signal: ctl.signal, redirect: opts.redirect }); }
+  catch (e) { throw new CloudErr(navigator.onLine === false ? 'You are offline' : 'Can’t reach the server — check your connection', 0, 'network', true); }
+  finally { clearTimeout(to); }
+}
+const cloudMsg = (j, res) => String((j && (j.msg || j.error_description || j.message || j.error || j.hint)) || ('HTTP ' + res.status));
+async function cloudJSON(res) {
+  const txt = await res.text(); let j = null;
+  try { j = txt ? JSON.parse(txt) : null; } catch (e) { j = { msg: txt.slice(0, 160) }; }
+  if (!res.ok) throw new CloudErr(cloudMsg(j, res), res.status, String((j && (j.error_code || j.code || j.error)) || ''));
+  return j;
+}
+async function authCall(path, method, body, token, query) {
+  const h = { apikey: sync.cfg.key, 'Content-Type': 'application/json' };
+  if (token) h.Authorization = 'Bearer ' + token;
+  return cloudJSON(await cloudFetch(sync.cfg.url + '/auth/v1' + path + (query || ''), { method, headers: h, body: body ? JSON.stringify(body) : undefined }));
+}
+function jwtPayload(tok) {
+  try { const p = String(tok).split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(decodeURIComponent(atob(p).split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''))); }
+  catch (e) { return {}; }
+}
+function makeSession(j) {
+  if (!j || !j.access_token) return null;
+  const pl = jwtPayload(j.access_token), u = j.user || {};
+  const exp = Number(j.expires_at) || Number(pl.exp) || Math.floor(Date.now() / 1000) + (Number(j.expires_in) || 3600);
+  return { access_token: j.access_token, refresh_token: j.refresh_token || '', expires_at: exp, user: { id: u.id || pl.sub || '', email: u.email || pl.email || '' } };
+}
+function setSession(s) { sync.auth = s; jset(AUTH_LS, s); }
+let refreshing = null;
+async function cloudToken(force) {
+  const a = sync.auth; if (!a) throw new CloudErr('Not signed in', 401, 'nosession');
+  if (!force && a.expires_at - 60 > Date.now() / 1000) return a.access_token;
+  if (!refreshing) refreshing = (async () => {
+    try {
+      const s = makeSession(await authCall('/token', 'POST', { refresh_token: a.refresh_token }, null, '?grant_type=refresh_token'));
+      if (!s) throw new CloudErr('Session refresh failed', 400, 'bad_session');
+      if (!s.user.id) s.user = a.user;
+      setSession(s); liveToken();
+      return s.access_token;
+    } catch (e) {
+      if (!e.net && [400, 401, 403].includes(e.status)) cloudSignedOut('Your cloud session expired — sign in again');
+      throw e;
+    } finally { refreshing = null; }
+  })();
+  return refreshing;
+}
+function cloudSignedOut(reason) {
+  sync.auth = null; jset(AUTH_LS, null); liveStop(); clearTimeout(sync.pushT); clearTimeout(sync.retryT);
+  setStatus('off'); renderCloudBtn();
+  if (reason) toast(reason, 'warn', 4200);
+}
+async function restCall(path, method, body, extra) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const tok = await cloudToken(attempt > 0);
+    const h = { apikey: sync.cfg.key, Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json', Accept: 'application/json' };
+    if (extra) Object.assign(h, extra);
+    const res = await cloudFetch(sync.cfg.url + '/rest/v1' + path, { method, headers: h, body: body !== undefined ? JSON.stringify(body) : undefined });
+    if (res.status === 401 && attempt === 0) continue;
+    return cloudJSON(res);
+  }
+  throw new CloudErr('Not authorised — sign in again', 401, 'auth');
+}
+function dbErrMsg(e) {
+  const c = String(e.code || ''), m = String(e.message || '');
+  if (/PGRST20[25]|42P01|42883/.test(c) || /schema cache|does not exist|Could not find the (table|function)/i.test(m)) return 'The cloud tables are missing — run the SQL from “Setup guide” in your Supabase project.';
+  return m;
+}
+
+/* ---- pull / push ---- */
+async function syncFetch(since) {
+  const out = new Map(); let cur = since || '';
+  for (let page = 0; page < 100; page++) {
+    let q = `/sync_items?select=key,t,deleted,value,updated_at&user_id=eq.${encodeURIComponent(sync.meta.uid)}&order=updated_at.asc&limit=1000`;
+    if (cur) q += '&updated_at=gte.' + encodeURIComponent(cur);
+    const rows = await restCall(q, 'GET');
+    if (!Array.isArray(rows)) throw new CloudErr('Unexpected reply from the server', 500, 'bad_reply');
+    rows.forEach(r => out.set(r.key, r));
+    if (rows.length < 1000) break;
+    const last = rows[rows.length - 1].updated_at;
+    if (last === cur) break;
+    cur = last;
+  }
+  return [...out.values()];
+}
+async function syncPullApply() {
+  const rows = await syncFetch(sync.meta.cursor);
+  if (rows.length) {
+    sync.queue.push(...rows);
+    const maxMs = Math.max(...rows.map(r => parseTs(r.updated_at)).filter(Number.isFinite));
+    if (Number.isFinite(maxMs)) sync.pendingCursor = new Date(maxMs - 5000).toISOString();     // 5 s overlap: a row that committed late is still picked up
+  }
+  syncApplyQueue();
+}
+function syncSkew(updatedAt, t0, t1) {
+  const m = sync.meta, srv = parseTs(updatedAt);
+  if (!Number.isFinite(srv) || t1 - t0 > 8000) return;
+  const sample = srv - (t0 + t1) / 2;
+  m.skew = m.skewSet ? Math.round(m.skew * 0.5 + sample * 0.5) : Math.round(sample); m.skewSet = true;
+}
+async function syncPush() {
+  const m = sync.meta, snap = syncSnapshot(), rows = [];
+  Object.keys(m.dirty).forEach(k => {
+    if (m.h[k] === null) rows.push({ key: k, t: m.t[k] || 0, deleted: true, value: null });
+    else if (snap.has(k)) rows.push({ key: k, t: m.t[k] || 0, deleted: false, value: snap.get(k) });
+    else delete m.dirty[k];                                       // not synced from this device (e.g. API-key sync switched off)
+  });
+  for (let i = 0; i < rows.length;) {
+    const chunk = []; let size = 0;
+    while (i < rows.length && chunk.length < 200 && (size < 300000 || !chunk.length)) { size += JSON.stringify(rows[i]).length; chunk.push(rows[i++]); }
+    const t0 = Date.now();
+    const out = await restCall('/rpc/sync_push', 'POST', { items: chunk });
+    const t1 = Date.now(), won = new Set();
+    (Array.isArray(out) ? out : []).forEach(r => { won.add(r.key); if (m.t[r.key] === Number(r.t)) delete m.dirty[r.key]; });
+    chunk.forEach(c => { if (!won.has(c.key)) sync.needPull = true; });          // the cloud already had something newer for these
+    if (Array.isArray(out) && out.length) syncSkew(out[0].updated_at, t0, t1);
+    saveMeta();
+  }
+}
+async function syncRun(reason) {
+  if (!sync.cfg || !sync.auth || !sync.meta || !sync.meta.uid || sync.linking) return;
+  if (sync.busy) { sync.again = true; return; }
+  sync.busy = true; clearTimeout(sync.retryT); setStatus('syncing');
+  try {
+    do {
+      sync.again = false;
+      await cloudToken();
+      if (sync.auth && sync.auth.user.id !== sync.meta.uid) throw new CloudErr('Signed in as a different account than this device is linked to', 409, 'uid');
+      syncScan(true);
+      await syncPullApply();
+      await syncPush();
+      if (sync.needPull) { sync.needPull = false; await syncPullApply(); }
+    } while (sync.again);
+    sync.mergeFirst = false;
+    sync.meta.last = Date.now(); saveMeta(); sync.err = ''; sync.retryN = 0;
+    setStatus(sync.alert ? 'attention' : 'ok');
+  } catch (e) {
+    syncFailed(e);
+  } finally { sync.busy = false; }
+}
+function syncFailed(e) {
+  if (!sync.auth) { setStatus('off'); return; }                        // signed out meanwhile (expired session)
+  if (e.net) { sync.err = ''; setStatus('offline'); }
+  else { sync.err = dbErrMsg(e); setStatus('error'); }
+  sync.retryN++;
+  const wait = e.net ? Math.min(300000, 4000 * 2 ** Math.min(sync.retryN, 6)) : Math.min(600000, 30000 * sync.retryN);
+  clearTimeout(sync.retryT); sync.retryT = setTimeout(() => { if (!document.hidden) syncRun('retry'); }, wait);
+}
+function setStatus(s) { sync.status = s; renderCloudBtn(); cloudAccountRefresh(); }
+
+/* ---- live updates (Supabase Realtime). Optional: if it cannot connect, polling still keeps devices in step ---- */
+function liveStart() {
+  if (sync.ws || !sync.cfg || !sync.auth || !sync.meta || !sync.meta.uid || !('WebSocket' in window) || document.hidden) return;
+  let ws; const topic = 'realtime:autocoach-' + sync.meta.uid; let n = 0, hb = null;
+  try { ws = new WebSocket(sync.cfg.url.replace(/^http/i, 'ws') + '/realtime/v1/websocket?apikey=' + encodeURIComponent(sync.cfg.key) + '&vsn=1.0.0'); } catch (e) { return; }
+  sync.ws = ws; sync.wsTopic = topic;
+  const send = (event, payload, tp) => { if (ws.readyState !== 1) return; const f = { topic: tp || topic, event, payload, ref: String(++n) }; if (!tp) f.join_ref = '1'; ws.send(JSON.stringify(f)); };
+  sync.wsSend = send;
+  ws.onopen = () => {
+    cloudToken().then(tok => {
+      ws.send(JSON.stringify({ topic, event: 'phx_join', ref: '1', join_ref: '1', payload: { config: { broadcast: { ack: false, self: false }, presence: { key: '' }, postgres_changes: [{ event: '*', schema: 'public', table: 'sync_items', filter: 'user_id=eq.' + sync.meta.uid }], private: false }, access_token: tok } }));
+      n = 1;
+    }).catch(() => { try { ws.close(); } catch (e) { /* ignore */ } });
+    hb = setInterval(() => send('heartbeat', {}, 'phoenix'), 25000);
+  };
+  ws.onmessage = ev => {
+    let msg; try { msg = JSON.parse(ev.data); } catch (e) { return; }
+    if (!msg || msg.topic !== topic) return;
+    if (msg.event === 'phx_reply') { const ok = msg.payload && msg.payload.status === 'ok'; sync.live = !!ok; if (ok) sync.wsRetry = 0; cloudAccountRefresh(); }
+    else if (msg.event === 'postgres_changes') { clearTimeout(sync.pingT); sync.pingT = setTimeout(() => syncRun('live'), 250); }
+    else if (msg.event === 'phx_error' || msg.event === 'phx_close') { sync.live = false; cloudAccountRefresh(); }
+  };
+  ws.onclose = () => {
+    clearInterval(hb); if (sync.ws === ws) { sync.ws = null; sync.wsSend = null; }
+    sync.live = false; cloudAccountRefresh();
+    if (sync.auth && sync.meta && sync.meta.uid && !document.hidden) { sync.wsRetry++; clearTimeout(sync.wsT); sync.wsT = setTimeout(liveStart, Math.min(60000, 3000 * 2 ** Math.min(sync.wsRetry, 5))); }
+  };
+  ws.onerror = () => { /* onclose follows; polling keeps working */ };
+}
+function liveStop() {
+  clearTimeout(sync.wsT); sync.live = false;
+  const ws = sync.ws; sync.ws = null; sync.wsSend = null;
+  if (ws) { ws.onclose = null; ws.onmessage = null; try { ws.close(); } catch (e) { /* ignore */ } }
+}
+function liveToken() { if (sync.ws && sync.wsSend && sync.auth) sync.wsSend('access_token', { access_token: sync.auth.access_token }); }
+
+/* ---- linking this device to an account ---- */
+async function cloudLink() {
+  const u = sync.auth && sync.auth.user; if (!u || !u.id) { cloudSignedOut('Could not read your account — try again'); return; }
+  if (!sync.meta) sync.meta = freshMeta();
+  if (sync.meta.uid === u.id) { sync.meta.email = u.email || sync.meta.email; saveMeta(); liveStart(); renderCloudBtn(); return syncRun('link'); }
+  sync.linking = true; setStatus('syncing');
+  try {
+    const other = !!sync.meta.uid, has = localHasData();
+    const probe = await restCall(`/sync_items?select=key&user_id=eq.${encodeURIComponent(u.id)}&limit=1`, 'GET');
+    const cloudHas = Array.isArray(probe) && probe.length > 0;
+    let mode = 'merge';
+    if ((cloudHas && has) || (other && has)) mode = await askLinkMode(other, cloudHas, u.email);
+    if (!mode) { sync.linking = false; await cloudSignOut(false); toast('Not signed in — nothing was changed', 'info'); return; }
+    await startLinked(u, mode);
+  } catch (e) {
+    sync.linking = false;
+    if (e.net) { setStatus('offline'); toast('Signed in, but offline — the first sync will finish when you are back online', 'warn', 4500); }
+    else { sync.err = dbErrMsg(e); setStatus('error'); toast(sync.err, 'err', 5000); }
+    return;
+  }
+  sync.linking = false;
+  liveStart();
+  return syncRun('link');
+}
+const localHasData = () => !!(S.logs.length || S.programs.length || S.runLogs.length || Object.keys(S.lifts).length || Object.keys(S.cues).length || Object.keys(S.prog).length);
+async function startLinked(u, mode) {
+  const m = sync.meta = freshMeta(u.id, u.email), now = cloudNow();
+  if (mode === 'cloud') {                                            // this device takes the account's data
+    const keep = { tab: S.tab }; const dev = {}; SYNC_LOCAL_SETTINGS.forEach(k => { dev[k] = S.settings[k]; });
+    const key = S.settings.apiKey;
+    S = defaults(); Object.assign(S.settings, dev); S.tab = keep.tab; if (key) S.settings.apiKey = key;
+    stopTick(); renderTimer();
+    syncSnapshot().forEach((v, k) => { m.h[k] = hashOf(v); m.t[k] = 0; });
+    sync.mergeFirst = true;
+  } else if (mode === 'device') {                                    // the account takes this device's data
+    const remote = await syncFetch('');
+    const snap = syncSnapshot();
+    snap.forEach((v, k) => { m.h[k] = hashOf(v); m.t[k] = now; m.dirty[k] = 1; });
+    remote.forEach(r => { if (!r.deleted && !snap.has(r.key)) { m.h[r.key] = null; m.t[r.key] = now; m.dirty[r.key] = 1; } });
+    const maxMs = Math.max(0, ...remote.map(r => parseTs(r.updated_at)).filter(Number.isFinite));
+    if (maxMs) m.cursor = new Date(maxMs - 5000).toISOString();
+  } else {                                                           // merge: union of items; the cloud wins ties on shared settings
+    syncSnapshot().forEach((v, k) => { m.h[k] = hashOf(v); m.t[k] = 0; m.dirty[k] = 1; });
+    sync.mergeFirst = true;
+  }
+  saveMeta(); save(true); render(true);
+}
+async function cloudSignOut(clearDevice) {
+  const tok = sync.auth && sync.auth.access_token;
+  if (tok && sync.cfg) { try { await authCall('/logout', 'POST', null, tok, '?scope=local'); } catch (e) { /* the session is dropped locally anyway */ } }
+  if (clearDevice) {
+    try { localStorage.removeItem(LS_KEY); } catch (e) { /* ignore */ }
+    sync.meta = freshMeta(); jset(SYNC_LS, null);
+    S = defaults(); stopTick(); timerDoneUntil = 0; renderTimer();
+  }
+  cloudSignedOut(null); sync.queue = []; sync.pendingCursor = null;
+  if (clearDevice) { closeModal(true); render(); window.scrollTo(0, 0); }
+  renderCloudBtn();
+}
+/** A pending mass-disappearance (looks like lost local data): restore from the cloud or really delete. */
+function syncAttention() {
+  if (!sync.alert || sync.attnOpen || sync.linking || syncUIBusy()) return;
+  sync.attnOpen = true;
+  const keys = sync.alert.keys.slice();
+  openModal({
+    title: 'Some data is missing here',
+    body: `<p class="small">${sync.alert.n || keys.length} of your synced items (workouts, lifts or programs) are no longer on this device. That usually means browser data was cleared, not that you deleted them.</p>
+      <p class="small muted">Restore them from your cloud copy, or delete them from the cloud too.</p>`,
+    footer: `<button class="btn danger" data-action="m:del">Delete from cloud</button><button class="btn pri grow" data-action="m:restore">Restore from cloud</button>`,
+    onClose: () => { sync.attnOpen = false; },
+    actions: {
+      __cloud: true,
+      restore() { keys.forEach(k => { delete sync.meta.h[k]; delete sync.meta.t[k]; delete sync.meta.dirty[k]; }); sync.meta.cursor = ''; sync.alert = null; saveMeta(); sync.attnOpen = false; closeModal(true); syncRun('restore'); toast('Restoring from your cloud copy…', 'ok'); },
+      del() { sync.massOK = true; syncScan(); sync.massOK = false; saveMeta(); sync.attnOpen = false; closeModal(true); syncRun('delete'); }
+    }
+  });
+}
+
+/* ---- auth flows ---- */
+const appUrl = () => location.origin + location.pathname;
+function authMessage(e) {
+  const m = String(e.message || ''), c = String(e.code || '');
+  if (e.net) return m;
+  if (/invalid login|invalid_credentials/i.test(m + c)) return 'Wrong email or password.';
+  if (/not confirmed|email_not_confirmed/i.test(m + c)) return 'Please confirm your email first — check your inbox for the link.';
+  if (/already (been )?registered|user_already_exists/i.test(m + c)) return 'That email already has an account — use Sign in instead.';
+  if (/password.*(at least|short)|weak_password/i.test(m + c)) return m;
+  if (e.status === 429 || /rate limit|over_.*_rate/i.test(m + c)) return 'Too many attempts — wait a minute and try again.';
+  if (/unsupported provider|provider is not enabled/i.test(m)) return 'Google sign-in is not switched on in your Supabase project (Authentication → Providers).';
+  return m || 'Something went wrong';
+}
+async function cloudSignIn(email, password) {
+  const s = makeSession(await authCall('/token', 'POST', { email, password }, null, '?grant_type=password'));
+  if (!s || !s.user.id) throw new CloudErr('Sign-in failed', 400, 'bad_session');
+  setSession(s); return cloudLink();
+}
+async function cloudSignUp(email, password) {
+  const j = await authCall('/signup', 'POST', { email, password }, null, '?redirect_to=' + encodeURIComponent(appUrl()));
+  const s = makeSession(j);
+  if (!s || !s.user.id) return 'confirm';                           // the project requires email confirmation
+  setSession(s); await cloudLink(); return 'in';
+}
+async function cloudGoogle() {
+  const url = sync.cfg.url + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(appUrl());
+  if (navigator.onLine === false) throw new CloudErr('You are offline — connect to sign in with Google', 0, 'network', true);
+  // Ask first, so a project without Google switched on shows a message here instead of a raw error page.
+  // Fail open: unless the server clearly answers with an error, go ahead and sign in.
+  let res = null; try { res = await fetch(url, { redirect: 'manual' }); } catch (e) { /* cannot tell (CORS or network): just go */ }
+  if (res && res.type !== 'opaqueredirect' && res.status >= 400) { let j = null; try { j = await res.json(); } catch (e) { /* ignore */ } throw new CloudErr(cloudMsg(j, res), res.status, String((j && (j.error_code || j.code)) || '')); }
+  save(true); location.assign(url);
+}
+async function cloudForgot(email) { await authCall('/recover', 'POST', { email }, null, '?redirect_to=' + encodeURIComponent(appUrl())); }
+async function cloudNewPassword(pw) { await authCall('/user', 'PUT', { password: pw }, await cloudToken()); }
+/** The page was opened from an OAuth / email-confirmation / password-reset link: tokens arrive in the URL fragment. */
+function handleAuthRedirect() {
+  if (!sync.cfg) return null;
+  const hash = location.hash.replace(/^#/, ''), qs = location.search.replace(/^\?/, '');
+  const hp = new URLSearchParams(hash), qp = new URLSearchParams(qs);
+  const err = hp.get('error_description') || qp.get('error_description') || hp.get('error') || qp.get('error');
+  const has = hp.get('access_token');
+  if (!has && !err) return null;
+  try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ }
+  if (err) return { error: err.replace(/\+/g, ' ') };
+  const s = makeSession({ access_token: has, refresh_token: hp.get('refresh_token'), expires_at: hp.get('expires_at'), expires_in: hp.get('expires_in') });
+  if (!s || !s.user.id) return { error: 'The sign-in link did not contain a valid session.' };
+  setSession(s);
+  return { session: s, type: hp.get('type') || '' };
+}
+
+/* ---- start-up ---- */
+function syncInit() {
+  sync.cfg = cloudCfg(); sync.auth = jget(AUTH_LS); sync.meta = loadMeta();
+  if (sync.auth && (!sync.auth.access_token || !sync.auth.user || !sync.auth.user.id)) { sync.auth = null; jset(AUTH_LS, null); }
+  const red = handleAuthRedirect();
+  if (sync.meta.uid) { sync.rebase = true; try { syncScan(true); } catch (e) { /* ignore */ } sync.rebase = false; saveMeta(); }
+  sync.status = sync.cfg && sync.auth ? 'ok' : 'off';
+  if (sync.alert) setTimeout(syncAttention, 1500);
+  renderCloudBtn();
+  window.addEventListener('online', () => { if (sync.auth) syncRun('online'); });
+  window.addEventListener('offline', () => { if (sync.auth) setStatus('offline'); });
+  document.addEventListener('visibilitychange', () => {
+    if (!sync.auth) return;
+    if (document.hidden) liveStop(); else { liveStart(); syncRun('visible'); }
+  });
+  window.addEventListener('storage', e => {                          // another tab of this app changed the data: adopt it instead of overwriting it later
+    if (e.storageArea !== localStorage) return;
+    if (e.key === LS_KEY && e.newValue && sync.meta && sync.meta.uid) { S = loadState(); sync.meta = loadMeta(); render(true); }
+    else if (e.key === AUTH_LS) { sync.auth = jget(AUTH_LS); renderCloudBtn(); }
+    else if (e.key === SYNC_LS) sync.meta = loadMeta();
+  });
+  setInterval(() => { if (sync.auth && sync.meta.uid && !document.hidden && !sync.busy) syncRun(sync.live ? 'slow' : 'poll'); }, 45000);
+  if (red && red.error) { setTimeout(() => toast('Sign-in failed: ' + red.error, 'err', 5000), 600); }
+  else if (red && red.session) { setTimeout(() => { if (red.type === 'recovery') cloudNewPasswordModal(); cloudLink(); }, 400); }
+  else if (sync.auth && sync.meta.uid) { setTimeout(() => { liveStart(); syncRun('start'); }, 700); }
+}
+
+/* ---- Cloud sync: UI (header button, sign-in sheet, account sheet, setup guide) ---- */
+const SYNC_SQL = `-- AutoCoach Lift · cloud sync. Run once: Supabase dashboard → SQL Editor → New query → paste → Run.
+create table if not exists public.sync_items (
+  user_id    uuid        not null default auth.uid() references auth.users (id) on delete cascade,
+  key        text        not null,
+  t          bigint      not null,                         -- edit time (ms); the newest edit of an item wins
+  deleted    boolean     not null default false,
+  value      jsonb,
+  updated_at timestamptz not null default clock_timestamp(),
+  primary key (user_id, key)
+);
+create index if not exists sync_items_user_updated_idx on public.sync_items (user_id, updated_at);
+
+alter table public.sync_items enable row level security;
+drop policy if exists "own rows" on public.sync_items;
+create policy "own rows" on public.sync_items for all to authenticated
+  using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+grant select, insert, update, delete on public.sync_items to authenticated;
+
+create or replace function public.sync_push(items jsonb)
+returns setof public.sync_items
+language sql security invoker set search_path = public
+as $$
+  insert into public.sync_items as s (user_id, key, t, deleted, value, updated_at)
+  select auth.uid(), i->>'key', (i->>'t')::bigint, coalesce((i->>'deleted')::boolean, false),
+         case when coalesce((i->>'deleted')::boolean, false) then null else i->'value' end, clock_timestamp()
+  from jsonb_array_elements(items) as i
+  on conflict (user_id, key) do update
+    set t = excluded.t, deleted = excluded.deleted, value = excluded.value, updated_at = clock_timestamp()
+    where s.t < excluded.t
+  returning s.*;
+$$;
+revoke all on function public.sync_push(jsonb) from public, anon;
+grant execute on function public.sync_push(jsonb) to authenticated;
+
+-- live updates between devices (optional; polling still works without it)
+do $$ begin alter publication supabase_realtime add table public.sync_items;
+exception when duplicate_object then null; end $$;`;
+
+function cloudDotClass() {
+  if (!sync.cfg || !sync.auth) return '';
+  return ({ ok: 'ok', syncing: 'sy', offline: 'off', error: 'bad', attention: 'warn' })[sync.status] || '';
+}
+function agoText(ms) {
+  if (!ms) return 'never';
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 20) return 'just now';
+  if (s < 3600) return Math.max(1, Math.round(s / 60)) + ' min ago';
+  const d = new Date(ms);
+  return (new Date().toDateString() === d.toDateString() ? 'today ' : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' ') + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+function cloudStatusText() {
+  if (!sync.cfg) return 'Not set up';
+  if (!sync.auth) return 'Signed out';
+  const n = pendingCount();
+  switch (sync.status) {
+    case 'syncing': return 'Syncing…';
+    case 'offline': return n ? `Offline · ${n} change${n === 1 ? '' : 's'} waiting` : 'Offline';
+    case 'error': return sync.err || 'Sync problem';
+    case 'attention': return 'Needs your attention';
+    default: return n ? `${n} change${n === 1 ? '' : 's'} to send` : 'Synced ' + agoText(sync.meta && sync.meta.last);
+  }
+}
+function renderCloudBtn() {
+  const b = $('#cloudBtn'); if (!b) return;
+  const on = !!(sync.cfg && sync.auth);
+  b.innerHTML = icon(on && sync.status === 'offline' ? 'cloudoff' : 'cloud', 22) + (on ? `<i class="cdot ${cloudDotClass()}"></i>` : '');
+  b.setAttribute('aria-label', 'Cloud sync — ' + cloudStatusText());
+}
+function cloudAccountRefresh() {
+  const el = $('#cStatus');
+  if (el) el.innerHTML = `<i class="cdot ${cloudDotClass()}"></i><span>${esc(cloudStatusText())}</span>`;
+  const lv = $('#cLive'); if (lv) lv.textContent = sync.live ? 'Live updates on' : 'Checking for changes every 45 s';
+}
+function cloudSettingsCard() {
+  const on = !!(sync.cfg && sync.auth);
+  return `<div class="cloudcard"><div class="row between gap"><div style="min-width:0"><b>Cloud sync</b>
+    <div class="hint" style="margin:2px 0 0">${on ? 'Signed in as ' + esc(sync.auth.user.email || 'your account') + ' · ' + esc(cloudStatusText()) : 'Keep your lifts, programs and history on every device.'}</div></div>
+    <button class="btn sm" data-action="open-cloud">${on ? 'Manage' : sync.cfg ? 'Sign in' : 'Set up'}</button></div></div>`;
+}
+const syncEraseNote = () => sync.meta && sync.meta.uid ? '\n\nThis device is linked to a cloud account: it will be signed out and unlinked. Your cloud copy is NOT deleted.' : '';
+
+/* ---- sheets ---- */
+let cloudTab = 'in';
+const cloudErr = (msg, ok) => { const e = $('#cErr'); if (e) { e.textContent = msg || ''; e.classList.toggle('ok', !!ok); } };
+function cloudModal(tab) {
+  if (tab) cloudTab = tab;
+  if (!sync.cfg) return cloudConfigModal();
+  return sync.auth ? cloudAccountModal() : cloudSignInModal();
+}
+function cloudConfigModal() {
+  const l = jget(CLOUD_LS) || {};
+  openModal({
+    title: 'Cloud sync',
+    body: `<p class="small cintro">Sync your lifts, programs, workouts and settings between devices with a free Supabase project. The app keeps working offline either way.</p>
+      <div class="field"><label for="cUrl">Project URL</label><input id="cUrl" class="txt" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://abcdxyz.supabase.co" value="${esc(l.url || '')}"></div>
+      <div class="field"><label for="cKey">Publishable (anon) key</label><input id="cKey" class="txt" autocapitalize="off" spellcheck="false" placeholder="sb_publishable_… or eyJ…" value="${esc(l.key || '')}">
+        <div class="hint">Both values are meant to be public — your data is protected by sign-in and row-level security. To have every device pick them up automatically, set them in <b>AUTOCOACH_CLOUD</b> at the top of the script instead.</div></div>
+      <div class="cloud-err" id="cErr" role="alert"></div>`,
+    footer: `<button class="btn ghost" data-action="m:guide">Setup guide</button><button class="btn pri grow" data-action="m:savecfg">Save</button>`,
+    actions: {
+      __cloud: true,
+      guide() { cloudGuideModal(); },
+      savecfg() {
+        const url = $('#cUrl').value.trim().replace(/\/+$/, ''), key = $('#cKey').value.trim();
+        jset(CLOUD_LS, { url, key });
+        const c = cloudCfg();
+        if (!c) { jset(CLOUD_LS, null); cloudErr('That does not look right: the URL should be like https://xxxx.supabase.co and the key is the long publishable/anon key.'); return; }
+        sync.cfg = c; renderCloudBtn(); cloudModal();
+      }
+    }
+  });
+}
+function cloudSignInModal() {
+  const up = cloudTab === 'up';
+  openModal({
+    title: 'Cloud sync',
+    body: `<p class="small cintro">Sign in to keep your lifts, programs, history and settings in step across your devices. Without an account everything stays on this device.</p>
+      <div class="seg" role="group" aria-label="Sign in or create account" style="margin:0 0 14px">
+        <button class="pchip ${up ? '' : 'on'}" data-action="m:tabin">Sign in</button><button class="pchip ${up ? 'on' : ''}" data-action="m:tabup">Create account</button></div>
+      <div class="field"><label for="cEmail">Email</label><input id="cEmail" class="txt" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="cPass">Password</label><input id="cPass" class="txt" type="password" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="${up ? 'At least 6 characters' : ''}"></div>
+      <div class="cloud-err" id="cErr" role="alert"></div>
+      <button class="btn pri block" data-action="m:submit" id="cGo">${up ? 'Create account' : 'Sign in'}</button>
+      <div class="or">or</div>
+      <button class="btn block" data-action="m:google" id="cGoogle">Continue with Google</button>
+      <div class="row between gap" style="margin-top:14px">${up ? '<span></span>' : '<button class="link" data-action="m:forgot">Forgot password?</button>'}<button class="link" data-action="m:guide">Setup guide</button></div>
+      ${sync.cfg.fromFile ? '' : '<div style="margin-top:10px"><button class="link" data-action="m:resetcfg">Use a different Supabase project</button></div>'}`,
+    actions: {
+      __cloud: true, __cloudSign: true,
+      tabin() { cloudModal('in'); }, tabup() { cloudModal('up'); },
+      guide() { cloudGuideModal(); },
+      resetcfg() { jset(CLOUD_LS, null); sync.cfg = cloudCfg(); renderCloudBtn(); cloudModal(); },
+      async submit(el) {
+        const email = $('#cEmail').value.trim(), pw = $('#cPass').value;
+        if (!/^\S+@\S+\.\S+$/.test(email)) return cloudErr('Enter a valid email address.');
+        if (pw.length < 6) return cloudErr('Use a password of at least 6 characters.');
+        cloudErr(''); el.disabled = true; const label = el.textContent; el.textContent = up ? 'Creating…' : 'Signing in…';
+        try {
+          if (up) { const r = await cloudSignUp(email, pw); if (r === 'confirm') { cloudErr(`Almost there — we emailed a confirmation link to ${email}. Open it, then come back and sign in.`, true); return; } }
+          else await cloudSignIn(email, pw);
+          if (sync.auth && (!modalCtx || (modalCtx.actions && modalCtx.actions.__cloudSign))) cloudModal();
+        } catch (e) { cloudErr(authMessage(e)); }
+        finally { el.disabled = false; el.textContent = label; }
+      },
+      async google(el) {
+        cloudErr(''); el.disabled = true;
+        try { await cloudGoogle(); } catch (e) { cloudErr(authMessage(e)); el.disabled = false; }
+      },
+      async forgot(el) {
+        const email = $('#cEmail').value.trim();
+        if (!/^\S+@\S+\.\S+$/.test(email)) return cloudErr('Type your email above first, then tap “Forgot password?”.');
+        el.disabled = true;
+        try { await cloudForgot(email); cloudErr(`If ${email} has an account, a reset link is on its way. Open it on this device.`, true); }
+        catch (e) { cloudErr(authMessage(e)); } finally { el.disabled = false; }
+      }
+    },
+    onMount(root) {
+      $$('#cEmail,#cPass', root).forEach(i => i.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); const b = $('#cGo'); if (b) b.click(); } }));
+    }
+  });
+}
+function cloudAccountModal() {
+  const m = sync.meta, email = (sync.auth.user && sync.auth.user.email) || m.email || 'your account';
+  openModal({
+    title: 'Cloud sync',
+    body: `<div class="card" style="margin-bottom:14px"><div class="muted xs">Signed in as</div><b style="word-break:break-all">${esc(email)}</b>
+        <div class="cstat" id="cStatus"><i class="cdot ${cloudDotClass()}"></i><span>${esc(cloudStatusText())}</span></div>
+        <div class="muted xs" id="cLive" style="margin-top:2px">${sync.live ? 'Live updates on' : 'Checking for changes every 45 s'}</div></div>
+      <div class="row gap wrap" style="margin-bottom:14px"><button class="btn sm pri" data-action="m:now" id="cNow">Sync now</button><button class="btn sm" data-action="m:guide">Setup guide</button></div>
+      <p class="small muted" style="margin:0 0 10px">Synced: 1RMs and progression history, programs and which one is active, your position in them (from workout history), workout and run history, profile, schedule and settings. Not synced: the workout you are in the middle of, the coach chat, notification and screen-awake choices.</p>
+      <label class="switch"><input type="checkbox" id="cSyncKey" ${m.syncKey ? 'checked' : ''}><span>Sync my Gemini API key<small>Stored in your own private cloud account so every device can use the Coach. Turn off to keep the key on each device only (a copy already in the cloud stays until you delete it).</small></span></label>
+      <div class="cloud-err" id="cErr" role="alert"></div>
+      <div class="sec-t">Account</div>
+      <div class="row gap wrap"><button class="btn sm" data-action="m:out">Sign out</button><button class="btn sm" data-action="m:outwipe">Sign out &amp; clear this device</button><button class="btn sm danger" data-action="m:delcloud">Delete cloud data</button></div>`,
+    actions: {
+      __cloud: true, __cloudAccount: true,
+      guide() { cloudGuideModal(); },
+      async now(el) {
+        el.disabled = true; const label = el.textContent; el.textContent = 'Syncing…';
+        await syncRun('manual');
+        el.disabled = false; el.textContent = label;
+        cloudErr(sync.status === 'ok' ? 'Everything is in sync.' : sync.status === 'offline' ? 'You are offline — changes will sync when you are back online.' : sync.err || '', sync.status === 'ok');
+      },
+      out() { if (!confirm('Sign out of cloud sync? Your data stays on this device.')) return; cloudSignOut(false).then(() => { toast('Signed out — your data stays on this device', 'info'); cloudModal(); }); },
+      outwipe() { if (!confirm('Remove ALL data from this device and sign out? Your cloud copy is kept and comes back when you sign in again.')) return; cloudSignOut(true).then(() => toast('Signed out and cleared this device', 'info')); },
+      async delcloud() {
+        if (!confirm('Delete everything stored in your cloud account (all synced data)? This device keeps its own copy but will be signed out and unlinked. Other devices keep theirs until they sign out.')) return;
+        try {
+          await restCall(`/sync_items?user_id=eq.${encodeURIComponent(sync.meta.uid)}`, 'DELETE');
+          sync.meta = freshMeta(); saveMeta();
+          await cloudSignOut(false); toast('Cloud data deleted', 'ok'); cloudModal();
+        } catch (e) { cloudErr(dbErrMsg(e)); }
+      }
+    },
+    onMount(root) {
+      const sw = $('#cSyncKey', root);
+      if (sw) sw.addEventListener('change', () => { sync.meta.syncKey = sw.checked; saveMeta(); try { syncScan(); } catch (e) { /* ignore */ } saveMeta(); syncSoon(300); });
+    }
+  });
+}
+function askLinkMode(other, cloudHas, email) {
+  return new Promise(resolve => {
+    let done = false; const fin = v => { if (done) return; done = true; closeModal(true); resolve(v); };
+    const who = esc(email || 'this account');
+    openModal({
+      title: other ? 'Use this account here?' : 'Combine your data?',
+      body: other
+        ? `<p class="small">This device was last linked to a <b>different</b> account. Signing in as <b>${who}</b> needs a choice, so the two accounts do not get mixed by accident.</p>`
+        : `<p class="small"><b>${who}</b> already has data in the cloud, and this device has its own. What should happen?</p>`,
+      footer: `<div class="stackb">
+        ${other ? '' : '<button class="btn pri block" data-action="m:merge">Combine both (recommended)</button>'}
+        <button class="btn ${other ? 'pri ' : ''}block" data-action="m:cloud">${cloudHas ? 'Use the account’s data — replace this device' : 'Start empty — clear this device'}</button>
+        <button class="btn block" data-action="m:device">${other ? 'Keep this device’s data — upload it to this account' : 'Use this device’s data — replace the cloud'}</button>
+        ${other ? '<button class="btn block" data-action="m:merge">Combine both</button>' : ''}
+        <button class="btn ghost block" data-action="m:cancel">Cancel</button></div>`,
+      onClose: () => fin(null),
+      actions: {
+        __cloud: true,
+        merge() { fin('merge'); },
+        cloud() { if (confirm('Replace everything on this device with the account’s data? This cannot be undone.')) fin('cloud'); },
+        device() { if (confirm('Replace the account’s cloud data with this device’s data? Other devices will receive it too.')) fin('device'); },
+        cancel() { fin(null); }
+      }
+    });
+  });
+}
+function cloudNewPasswordModal() {
+  openModal({
+    title: 'Choose a new password',
+    body: `<div class="field"><label for="cNew">New password</label><input id="cNew" class="txt" type="password" autocomplete="new-password" placeholder="At least 6 characters"></div><div class="cloud-err" id="cErr" role="alert"></div>`,
+    footer: `<button class="btn ghost" data-action="close-modal">Later</button><button class="btn pri grow" data-action="m:setpw">Save password</button>`,
+    actions: {
+      __cloud: true,
+      async setpw(el) {
+        const pw = $('#cNew').value; if (pw.length < 6) return cloudErr('Use a password of at least 6 characters.');
+        el.disabled = true;
+        try { await cloudNewPassword(pw); closeModal(true); toast('Password updated', 'ok'); } catch (e) { cloudErr(authMessage(e)); el.disabled = false; }
+      }
+    }
+  });
+}
+function cloudGuideModal() {
+  openModal({
+    title: 'Cloud sync setup',
+    body: `<div class="guide small">
+      <p>Free, about 10 minutes, one time. You need a <b>Supabase</b> account (supabase.com).</p>
+      <ol>
+        <li><b>Create a project</b> — Dashboard → New project. Pick any name and region.</li>
+        <li><b>Copy two values</b> — Project Settings → API: the <i>Project URL</i> and the <i>publishable (anon) key</i>.</li>
+        <li><b>Create the table</b> — SQL Editor → New query → paste the SQL below → Run.</li>
+        <li><b>Allow your app address</b> — Authentication → URL Configuration: set <i>Site URL</i> to the address you open this app at (for example <code>https://yourname.github.io/autocoach/</code>) and add the same address followed by <code>**</code> under <i>Redirect URLs</i>.</li>
+        <li><b>Paste the two values</b> into <code>AUTOCOACH_CLOUD</code> at the top of the script in <code>index.html</code> — then every device picks them up. (Or paste them in this sheet on each device.)</li>
+        <li><i>Optional</i> — Authentication → Providers → Email: switch off “Confirm email” for instant sign-up.</li>
+        <li><i>Optional, Google sign-in</i> — Authentication → Providers → Google: add a Client ID and secret from a Google Cloud “Web application” OAuth client, and add the callback URL Supabase shows there to Google’s authorised redirect URIs.</li>
+      </ol>
+      <p class="muted">Sign-in links only work when the app is opened from an https address (GitHub Pages, Netlify…), not from a local file.</p>
+      <div class="row between gap" style="margin:12px 0 6px"><b>SQL for step 3</b><button class="btn sm" data-action="m:copy" id="cCopy">Copy SQL</button></div>
+      <pre class="sqlbox" id="cSql">${esc(SYNC_SQL)}</pre></div>`,
+    footer: `<button class="btn pri grow" data-action="m:back">Back</button>`,
+    actions: {
+      __cloud: true,
+      back() { cloudModal(); },
+      async copy(el) {
+        let ok = false;
+        try { await navigator.clipboard.writeText(SYNC_SQL); ok = true; } catch (e) { /* fall back to selection */ }
+        if (!ok) { try { const r = document.createRange(); r.selectNodeContents($('#cSql')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); ok = document.execCommand('copy'); } catch (e) { /* ignore */ } }
+        el.textContent = ok ? 'Copied ✓' : 'Select & copy manually';
+      }
+    }
+  });
+}
+const syncImportNote = () => sync.meta && sync.meta.uid ? '\n\nThis device is signed in to cloud sync, so your other devices will receive this data too.' : '';
+/** Unlink this device (used by "Erase all data"): drop the session and the change-tracking, keep the cloud copy. */
+function syncUnlink() {
+  const tok = sync.auth && sync.auth.access_token;
+  if (tok && sync.cfg) authCall('/logout', 'POST', null, tok, '?scope=local').catch(() => { /* ignore */ });
+  sync.meta = freshMeta(); jset(SYNC_LS, null); sync.queue = []; sync.pendingCursor = null; sync.alert = null;
+  cloudSignedOut(null);
 }
 
 /* ---- program-scope helpers (swap / pair / add apply "today", "this block" or "whole program") ---- */
@@ -3529,9 +4405,10 @@ function settingsModal() {
   openModal({
     title: 'Settings',
     body: `
+      ${cloudSettingsCard()}
       <div class="field"><label for="sKey">Google Gemini API key</label>
         <div class="row gap"><input id="sKey" class="txt" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AIza…" value="${esc(st.apiKey)}"><button class="btn sm" data-action="m:togglekey" id="sKeyBtn">Show</button></div>
-        <div class="hint">Stays on this device (localStorage). Requests go directly from your browser to Google. Get a key at aistudio.google.com/apikey.</div></div>
+        <div class="hint">Stays on this device (localStorage)${sync.auth && sync.meta && sync.meta.syncKey ? ' and in your private cloud account so every device can use it (switch that off under Cloud sync)' : ''}. Requests go directly from your browser to Google. Get a key at aistudio.google.com/apikey.</div></div>
       <div class="field"><label for="sModel">Model</label><input id="sModel" class="txt" value="${esc(st.model)}" autocapitalize="off" spellcheck="false"><div class="hint">Default: ${GEMINI_DEFAULT}. Any Gemini model code from Google's model list works.</div></div>
       <label class="switch"><input type="checkbox" id="sAuto" ${st.autoCoach ? 'checked' : ''}><span>Coach Ducky speaks up automatically after a failed set or a new PR</span></label>
       <div class="sec-t">Workout tools</div>
@@ -3584,7 +4461,7 @@ function settingsModal() {
           ${deferredInstall ? '<button class="btn sm" data-action="m:install">Install app</button>' : ''}
           <button class="btn sm danger" data-action="m:reset">Erase all data</button>
         </div>
-        <div class="hint">Everything (1RMs, programs, workout and run history, settings) lives in this browser. A JSON backup never includes your API key.</div></div>`,
+        <div class="hint">Everything (1RMs, programs, workout and run history, settings) lives in this browser${sync.auth ? ' and in your cloud account' : ''}. A JSON backup never includes your API key.</div></div>`,
     footer: `<button class="btn ghost" data-action="close-modal">Cancel</button><button class="btn pri grow" data-action="m:save">Save settings</button>`,
     actions: {
       askperm(el) { requestNotify().then(() => { const p = $('#sPerm'); if (p) p.querySelector('b').textContent = notifyPerm(); if (el && notifyPerm() === 'granted') el.remove(); }); },
@@ -3637,7 +4514,8 @@ function settingsModal() {
       import() { pickBackup(); },
       install() { if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; } },
       reset() {
-        if (!confirm('Erase ALL data on this device (lifts, programs, logs, chat, API key)? This cannot be undone.')) return;
+        if (!confirm('Erase ALL data on this device (lifts, programs, logs, chat, API key)? This cannot be undone.' + syncEraseNote())) return;
+        syncUnlink();
         try { localStorage.removeItem(LS_KEY); } catch (e) { /* ignore */ }
         S = defaults(); stopTick(); timerDoneUntil = 0; renderTimer(); closeModal(true); render(); window.scrollTo(0, 0); toast('All data erased');
       }
@@ -4455,6 +5333,7 @@ function loadSample(key) {
 const A = {
   'tab': el => setTab(el.dataset.tab),
   'open-settings': () => settingsModal(),
+  'open-cloud': () => cloudModal(),
   'hist-f': el => { histFilter = el.dataset.f; render(true); },
   'blk': el => blockDetail(el.dataset.id, el.dataset.date),
   'blk-new': () => blockModal(null, { days: [new Date().getDay()] }),
@@ -4708,6 +5587,7 @@ window.__autocoach = {
   lowPct, lowW, sugOf, stepW, stepInc, adjustSet, setRowHTML, exportJSON, importJSONText, backupRowHTML, setLowE, liveTarget, logSet,
   loadSample, TIER_INFO, TIER_KEYS, tierCfg, tierPct, calcTierPct, tierRangeText, weekCtx, sessionCtx, setCtx, intPct, intFull, targetFor, migrateTiers, createSession, getProgram,
   callGemini, GEMINI_DEFAULT,
+  finishWorkout, ensureSession, nextSession, doneKeys, activeProgram, sync, syncScan, syncRun, syncSnapshot, syncApplyRows, syncApplyQueue, cloudCfg, cloudModal, cloudStatusText, hashOf, canon, mergeLift, cloudSignOut, cloudNow, loadMeta, SYNC_SQL, AUTOCOACH_CLOUD_PRESENT: () => typeof AUTOCOACH_CLOUD,
   timerLeft: () => S.timer ? Math.ceil((S.timer.end - Date.now()) / 1000) : 0
 };
 
@@ -4718,6 +5598,7 @@ if (S.timer && S.timer.end <= Date.now()) S.timer = null;
 if (S.timer) { startTick(); armBackground(); }
 renderTimer();
 wireTimerLifecycle();
+syncInit();
 render();
 })();
 </script>
