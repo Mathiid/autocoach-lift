@@ -633,11 +633,12 @@ function migrateTiers(so) {
   return out;
 }
 
+const GEMINI_DEFAULT = 'gemini-3.8-flash', GEMINI_OLD_DEFAULT = 'gemini-2.5-flash';
 const LS_KEY = 'autocoach-lift:v1';
 const defaults = () => ({
   v: 3,
   settings: {
-    units: 'kg', rounding: 2.5, apiKey: '', model: 'gemini-2.5-flash', autoCoach: true,
+    units: 'kg', rounding: 2.5, apiKey: '', model: 'gemini-3.8-flash', autoCoach: true,
     labels: { heavy: 85, medium: 75, light: 65 },   // legacy single-% labels (kept so old backups still load)
     tiers: { heavy: { lo: 80, hi: 92, pos: 50 }, medium: { lo: 70, hi: 79, pos: 50 }, light: { lo: 50, hi: 65, pos: 50 }, deload: { lo: 50, hi: 60, pos: 50 } },
     tierAuto: true,         // pick the % inside each range from reps + week in the block
@@ -708,6 +709,8 @@ function loadState() {
         ['cues', 'autoLoad', 'notify', 'keepAwake'].forEach(k => { st[k] = st[k] !== false; });
         st.ssBetween = clamp(Math.round(Number(st.ssBetween)) || 20, 0, 300);
         st.bgAudio = st.bgAudio === true; st.notifyAsked = st.notifyAsked === true;
+        if (!String(st.model || '').trim()) st.model = GEMINI_DEFAULT;
+        if (!st.modelMig) { if (String(st.model).trim() === GEMINI_OLD_DEFAULT) st.model = GEMINI_DEFAULT; st.modelMig = true; }   // one-time: the old default moves to Gemini 3.8 Flash; a model you pick later is kept
       }
     }
   } catch (e) { console.warn('Could not read saved data', e); }
@@ -1649,17 +1652,20 @@ let coachBusy = false;
 async function callGemini(userText, system, opts = {}) {
   const key = S.settings.apiKey;
   if (!key) throw new Error('NO_KEY');
-  const model = (S.settings.model || 'gemini-2.5-flash').trim();
+  const model = (S.settings.model || GEMINI_DEFAULT).trim();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const g3 = /gemini-3/i.test(model);          // Gemini 3.x always thinks, and thinking tokens count toward maxOutputTokens
   const body = {
     systemInstruction: { parts: [{ text: system }] },
     contents: [{ role: 'user', parts: [{ text: userText }] }],
-    generationConfig: { temperature: opts.temperature ?? 0.8, maxOutputTokens: opts.maxTokens ?? 900 }
+    generationConfig: { maxOutputTokens: (opts.maxTokens ?? 900) + (g3 ? 1536 : 0) }   // headroom so thinking cannot eat the whole answer
   };
+  if (!g3) body.generationConfig.temperature = opts.temperature ?? 0.8;               // Google recommends the default temperature for Gemini 3
   if (/2\.5-flash/i.test(model) && !/pro/i.test(model)) body.generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  if (g3) body.generationConfig.thinkingConfig = { thinkingLevel: 'low' };            // short coaching answers: keep thinking light and fast
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), opts.timeout ?? 40000);
-  try {
+  const send = async () => {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
@@ -1667,10 +1673,18 @@ async function callGemini(userText, system, opts = {}) {
     });
     let data = null;
     try { data = await res.json(); } catch (e) { /* non-JSON error body */ }
+    return { res, data };
+  };
+  try {
+    let { res, data } = await send();
+    if (!res.ok && g3 && body.generationConfig.thinkingConfig && /thinking/i.test((data && data.error && data.error.message) || '')) {
+      delete body.generationConfig.thinkingConfig;                                    // this model rejected the thinking setting: retry with its default
+      ({ res, data } = await send());
+    }
     if (!res.ok) throw new Error((data && data.error && data.error.message) || `HTTP ${res.status}`);
     const cand = data && data.candidates && data.candidates[0];
-    const text = ((cand && cand.content && cand.content.parts) || []).map(p => p.text || '').join('').trim();
-    if (!text) throw new Error(data && data.promptFeedback && data.promptFeedback.blockReason ? 'Blocked: ' + data.promptFeedback.blockReason : 'Empty response from Gemini');
+    const text = ((cand && cand.content && cand.content.parts) || []).filter(p => !p.thought).map(p => p.text || '').join('').trim();
+    if (!text) throw new Error(data && data.promptFeedback && data.promptFeedback.blockReason ? 'Blocked: ' + data.promptFeedback.blockReason : cand && cand.finishReason === 'MAX_TOKENS' ? 'The model used its whole token budget thinking. Try again' : 'Empty response from Gemini');
     return text;
   } finally { clearTimeout(timer); }
 }
@@ -3518,7 +3532,7 @@ function settingsModal() {
       <div class="field"><label for="sKey">Google Gemini API key</label>
         <div class="row gap"><input id="sKey" class="txt" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AIza…" value="${esc(st.apiKey)}"><button class="btn sm" data-action="m:togglekey" id="sKeyBtn">Show</button></div>
         <div class="hint">Stays on this device (localStorage). Requests go directly from your browser to Google. Get a key at aistudio.google.com/apikey.</div></div>
-      <div class="field"><label for="sModel">Model</label><input id="sModel" class="txt" value="${esc(st.model)}" autocapitalize="off" spellcheck="false"></div>
+      <div class="field"><label for="sModel">Model</label><input id="sModel" class="txt" value="${esc(st.model)}" autocapitalize="off" spellcheck="false"><div class="hint">Default: ${GEMINI_DEFAULT}. Any Gemini model code from Google's model list works.</div></div>
       <label class="switch"><input type="checkbox" id="sAuto" ${st.autoCoach ? 'checked' : ''}><span>Coach Ducky speaks up automatically after a failed set or a new PR</span></label>
       <div class="sec-t">Workout tools</div>
       <div class="grid2">
@@ -3585,7 +3599,7 @@ function settingsModal() {
           tiers[k] = { lo, hi, pos: pos == null ? 50 : clamp(pos, 0, 100) };
         }
         S.settings.apiKey = $('#sKey').value.trim();
-        S.settings.model = $('#sModel').value.trim() || 'gemini-2.5-flash';
+        S.settings.model = $('#sModel').value.trim() || GEMINI_DEFAULT;
         S.settings.autoCoach = $('#sAuto').checked;
         const newU = $('#sUnits').value;
         if (newU !== S.settings.units) { S.settings.plates = PLATE_DEFAULT[newU].slice(); S.settings.bar = newU === 'kg' ? 20 : 45; }
@@ -3613,7 +3627,7 @@ function settingsModal() {
       },
       async testkey(el) {
         const prev = { key: S.settings.apiKey, model: S.settings.model };
-        S.settings.apiKey = $('#sKey').value.trim(); S.settings.model = $('#sModel').value.trim() || 'gemini-2.5-flash';
+        S.settings.apiKey = $('#sKey').value.trim(); S.settings.model = $('#sModel').value.trim() || GEMINI_DEFAULT;
         el.disabled = true; el.textContent = 'Testing…';
         try { await callGemini('Reply with the single word: OK', 'You are a connectivity test. Reply with one word.', { maxTokens: 16, temperature: 0 }); toast('Gemini connection works ✓', 'ok'); }
         catch (e) { toast(e.message === 'NO_KEY' ? 'Paste your API key first' : 'Test failed: ' + friendlyErr(e), 'err', 4500); }
@@ -4693,6 +4707,7 @@ window.__autocoach = {
   blocksOn, layoutDay, nutritionFor, targetsFor, planSessionFor, autoPlanWeek, newBlock, cleanBlock, nextOcc, occDone, workOn, schedRange, hm, hmStr, t12,
   lowPct, lowW, sugOf, stepW, stepInc, adjustSet, setRowHTML, exportJSON, importJSONText, backupRowHTML, setLowE, liveTarget, logSet,
   loadSample, TIER_INFO, TIER_KEYS, tierCfg, tierPct, calcTierPct, tierRangeText, weekCtx, sessionCtx, setCtx, intPct, intFull, targetFor, migrateTiers, createSession, getProgram,
+  callGemini, GEMINI_DEFAULT,
   timerLeft: () => S.timer ? Math.ceil((S.timer.end - Date.now()) / 1000) : 0
 };
 
