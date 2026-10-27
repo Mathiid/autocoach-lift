@@ -540,6 +540,54 @@ a.btn{text-decoration:none}
 .guide code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 5px;font-size:12px;word-break:break-all}
 .sqlbox{background:var(--bg);border:1px solid var(--line2);border-radius:12px;padding:10px 12px;font:11.5px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;overflow:auto;max-height:260px;color:#dcdcdc;margin:0;-webkit-user-select:text;user-select:text}
 .cintro{margin:0 0 14px}
+/* ---- raw-text importer (Programs tab) + section labels (Train) ---- */
+.ell{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.impCard{border-color:rgba(200,255,0,.3)}
+.impHead{display:flex;gap:12px;align-items:flex-start}
+.impHead .ic{flex:none;width:40px;height:40px;border-radius:14px;background:rgba(200,255,0,.12);color:var(--acc);display:grid;place-items:center}
+.impHead h3{margin:0 0 2px;font-size:17px}
+.impTools{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}
+.impTa{display:block;min-height:140px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;overflow:auto;resize:vertical}
+.impTa.has{min-height:250px}
+.impOpts{margin-top:12px}
+.impOpts .field{margin-bottom:0}
+.impOpts .field>label{gap:6px}
+.impNotes{margin-top:8px;display:grid;gap:3px;color:var(--mut);font-size:12.5px}
+.impTreeW{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.impTreeW>summary{padding:12px 14px;font-weight:800;font-size:14px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.impBlk{border-top:1px solid var(--line)}
+.impBlk>summary{padding:11px 14px;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline;font-size:14px}
+.impDay{padding:2px 14px 12px}
+.impDn{font-weight:800;font-size:13.5px;margin:6px 0 2px;color:var(--acc)}
+.impEx{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13.5px;line-height:1.35}
+.impEx:last-child{border-bottom:0}
+.impEx .nm{min-width:0;overflow-wrap:anywhere}
+.impEx .rx{color:var(--mut);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.impEx .ex2{grid-column:1/-1;color:var(--dim);font-size:11.5px}
+.impPlan{display:grid;gap:8px;margin-top:6px}
+.impPd{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:8px 8px 8px 14px}
+.impPd select.txt{width:112px;min-height:42px;flex:none;padding-top:6px;padding-bottom:6px;font-size:15px}
+.secH{font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);margin:18px 4px 8px;display:flex;align-items:center;gap:10px}
+.secH::after{content:"";flex:1;height:1px;background:var(--line)}
+.impDay .secH{margin:10px 0 2px;font-size:10.5px}
+@media (max-width:360px){.impPd select.txt{width:104px}.impEx{font-size:13px}}
+[hidden].hero{display:none}
+/* ---- Google sign-in card, slot and account avatar ---- */
+.gcard{border-color:var(--line2);background:linear-gradient(180deg,var(--card),var(--card2))}
+.gc-h{display:flex;gap:12px;align-items:flex-start}
+.gc-h>svg{flex:none;color:var(--acc);margin-top:2px}
+.gc-h b{display:block;font-size:16px;line-height:1.25}
+.gc-h p{margin:4px 0 0}
+.gc-f{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px}
+.gslot{display:flex;justify-content:center;align-items:center;min-height:44px;margin:14px 0 0;transition:opacity .15s;max-width:100%;overflow:hidden}
+.gslot.busy{opacity:.45;pointer-events:none}
+.gslot .gbtn{min-height:46px;font-size:15px}
+.gslot>div{max-width:100%}
+.acct{display:flex;align-items:center;gap:12px}
+.avatar{position:relative;flex:none;width:48px;height:48px;border-radius:50%;background:var(--acc);color:#111;display:grid;place-items:center;font-weight:800;font-size:20px;overflow:hidden}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .2s}
+.avatar img.ok{opacity:1}
+.gslot.wait{background:var(--card2);border-radius:999px;animation:cpulse 1.2s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -573,12 +621,16 @@ a.btn{text-decoration:none}
      1. Create a Supabase project. Project Settings → API: copy the Project URL and the publishable (anon) key.
      2. SQL Editor: run the script from the in-app Setup guide (creates one table with row-level security).
      3. Authentication → URL Configuration: set Site URL + Redirect URLs to the https address you host this file at.
-     4. Paste the two values below. (Google sign-in: Authentication → Providers → Google.)
+     4. Paste the two values below.
+     5. Optional “Sign in with Google”: Google Cloud → Credentials → OAuth client ID (Web application), add this app's address under
+        Authorized JavaScript origins; then Supabase → Authentication → Providers → Google → Client IDs: paste the same ID;
+        and put it in googleClientId below. Signing in then loads your program, 1RMs, history and settings on any device.
    Both values are public by design; your data is protected by sign-in and row-level security.
    ====================================================================== */
 const AUTOCOACH_CLOUD = {
   url: '',        // e.g. 'https://abcdxyz.supabase.co'
-  anonKey: ''     // e.g. 'sb_publishable_…' or the long 'eyJ…' anon key
+  anonKey: '',    // e.g. 'sb_publishable_…' or the long 'eyJ…' anon key
+  googleClientId: ''  // optional: Google OAuth “Web application” client ID (…apps.googleusercontent.com) for the one-tap “Sign in with Google” button
 };
 
 (() => {
@@ -707,6 +759,7 @@ const defaults = () => ({
   logs: [],             // finished workouts, newest first
   coach: [],            // chat messages
   timer: null,          // running rest timer { end, total, label }
+  account: null,        // cloud profile { uid, name, email, photo, provider, created, lastSeen, devices } — set by cloud sign-in, synced as one item
   tab: 'home'
 });
 let S = loadState();
@@ -725,6 +778,7 @@ function loadState() {
         d.settings.tiers = migrateTiers(o.settings || {});
         d.settings.tierAuto = d.settings.tierAuto !== false; d.settings.deloadAuto = d.settings.deloadAuto !== false;
         if (!d.lifts || typeof d.lifts !== 'object') d.lifts = {};
+        if (!d.account || typeof d.account !== 'object' || Array.isArray(d.account) || !d.account.uid) d.account = null;
         ['programs', 'logs', 'coach'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
         const st = d.settings, so = o.settings || {}, lbs = st.units === 'lb';
         if (!Array.isArray(so.plates) || !so.plates.length || so.plates.some(x => !(Number(x) > 0))) st.plates = lbs ? [45, 25, 10, 5, 2.5] : [20, 10, 5, 2.5, 1.25];
@@ -955,7 +1009,7 @@ const RE_BLOCK = /^block\b\s*(\d+)?\s*[:\-–—]?\s*(.*)$/i;
 const RE_WEEK  = /^weeks?\b\s*(\d+)(?:\s*(?:-|–|—|to)\s*(\d+))?\s*(?:[:\-–—]\s*)?(.*)$/i;
 const RE_DAY   = /^day\b\s*(\d+)?\s*[:\-–—]?\s*(.*)$/i;
 const RE_PROG  = /^(?:program|plan)\s*[:\-–—]\s*(.+)$/i;
-const SET_RE   = /(\d+)\s*[x×]\s*(\d+(?:\s*[-–]\s*\d+)?\+?|amrap|max)/i;
+const SET_RE   = /(\d+)\s*[x×]\s*(\d+(?:\s*[-–]\s*\d+)?\+?(?:(?:sec|min|km|yd|ft|s|m)(?![A-Za-z]))?|amrap|max)/i;
 const PCT_RE   = /^(\d+(?:\.\d+)?)\s*%(?:\s*\(?\s*([+-]\s*\d+(?:\.\d+)?)\s*%?(?:\s*\/\s*(?:wk|week))?\s*\)?)?/i;
 const LABEL_RE = /^(heavy|medium|med|light|deload)\b/i;
 const ABS_RE   = /^(\d+(?:\.\d+)?)\s*(?:kgs?|lbs?)\b/i;
@@ -983,6 +1037,11 @@ function parseIntensity(tail) {
 function parseRepsToken(tok) {
   const txt = tok.toLowerCase().replace(/\s+/g, '');
   if (txt === 'amrap' || txt === 'max') return { reps: 1, repsText: 'AMRAP' };
+  const u = /^(\d+)(?:-\d+)?(s|sec|min|m|km|yd|ft)$/.exec(txt);           // 45s hold, 2min, 40m carry: time counts as reps when <= 100
+  if (u) {
+    const n = parseInt(u[1], 10), tk = /^(?:s|sec)$/.test(u[2]) ? n : u[2] === 'min' ? n * 60 : 0;
+    return { reps: tk >= 1 && tk <= 100 ? tk : 1, repsText: txt.replace(/sec$/, 's') };
+  }
   return { reps: parseInt(txt, 10), repsText: txt };
 }
 
@@ -1006,10 +1065,11 @@ function exExtras(ex) {
   if (ex.cues && ex.cues.length) o.cues = ex.cues.slice();
   if (ex.ss) o.ss = ex.ss;
   if (ex.rest) o.rest = Object.assign({}, ex.rest);
+  if (ex.sec) o.sec = ex.sec;
   return o;
 }
 function parseExerciseLine(line, ln, errors, warnings) {
-  let alts = [], cues = [], restSpec = null, ss = null;
+  let alts = [], cues = [], restSpec = null, ss = null, secSet;
   const lm = SS_LABEL_RE.exec(line);
   if (lm) { ss = lm[1].toUpperCase(); line = line.slice(lm[0].length); }
   if (line.includes('|')) {
@@ -1017,10 +1077,11 @@ function parseExerciseLine(line, ln, errors, warnings) {
     let last = '';
     parts.forEach(pt => {
       const t = pt.trim(); if (!t) return;
-      const m = /^(alts?|alternatives?|cues?|rest)\b\s*:?\s*(.*)$/i.exec(t);
+      const m = /^(alts?|alternatives?|cues?|rest|sec(?:tion)?)\b\s*:?\s*(.*)$/i.exec(t);
       if (m) {
-        last = /^a/i.test(m[1]) ? 'a' : /^c/i.test(m[1]) ? 'c' : 'r';
-        if (last === 'a') alts.push(...m[2].split(/\s*\/\s*/).map(x => x.trim()).filter(Boolean));
+        last = /^a/i.test(m[1]) ? 'a' : /^c/i.test(m[1]) ? 'c' : /^s/i.test(m[1]) ? 's' : 'r';
+        if (last === 's') { const v = m[2].trim().slice(0, 40); secSet = /^(?:none|-|off)?$/i.test(v) ? '' : v; }
+        else if (last === 'a') alts.push(...m[2].split(/\s*\/\s*/).map(x => x.trim()).filter(Boolean));
         else if (last === 'c') cues.push(...m[2].split(/\s*[\/;]\s*/).map(x => x.trim().slice(0, 48)).filter(Boolean));
         else { restSpec = parseRestSpec(m[2]); if (!restSpec) warnings.push({ line: ln, msg: `Couldn't read rest "${m[2]}" (use e.g. | rest: 20/90 or | rest: 2m)` }); }
       } else if (last === 'a') alts.push(...t.split(/\s*\/\s*/).map(x => x.trim()).filter(Boolean));
@@ -1051,7 +1112,7 @@ function parseExerciseLine(line, ln, errors, warnings) {
     for (let i = 0; i < n; i++) sets.push({ reps: rp.reps, repsText: rp.repsText, int: pi.int ? Object.assign({}, pi.int) : null });
   });
   if (!sets.length) return null;
-  return Object.assign({ name, sets }, exExtras({ alts, cues, ss, rest: restSpec }));
+  return Object.assign({ name, sets }, exExtras({ alts, cues, ss, rest: restSpec }), secSet !== undefined ? { secSet } : {});
 }
 
 function parseProgramText(text) {
@@ -1063,9 +1124,14 @@ function parseProgramText(text) {
     if (!blk) newBlock('Block ' + (blocks.length + 1), null);
     grp = { from, to, label, deload, days: [] }; blk.groups.push(grp); day = null;
   };
+  const pushEx = ex => {
+    if (ex.secSet !== undefined) { day.sec = ex.secSet || null; delete ex.secSet; }
+    if (day.sec) ex.sec = day.sec;
+    day.exercises.push(ex);
+  };
   const newDay = name => {
     if (!grp) { if (blk && blk.hint) newGroup(blk.hint[0], blk.hint[1], '', false); else newGroup(1, 1, '', false); }
-    day = { name, exercises: [] }; grp.days.push(day);
+    day = { name, exercises: [], sec: null }; grp.days.push(day);
   };
 
   String(text || '').replace(/\r/g, '').split('\n').forEach((raw, i) => {
@@ -1106,13 +1172,13 @@ function parseProgramText(text) {
       if (parts.length < 2) { errors.push({ line: ln, msg: 'A superset needs two exercises joined with + (e.g. Superset: Pull-ups 3x8 + Dips 3x10)' }); return; }
       if (!day) newDay('Day ' + (grp ? grp.days.length + 1 : 1));
       day.ssN = (day.ssN || 0) + 1; const id = 'S' + day.ssN;
-      parts.forEach((pt, pi) => { const ex = parseExerciseLine(pi === 0 ? pt + ' ' + mods : pt, ln, errors, warnings); if (ex) { ex.ss = id; day.exercises.push(ex); } });
+      parts.forEach((pt, pi) => { const ex = parseExerciseLine(pi === 0 ? pt + ' ' + mods : pt, ln, errors, warnings); if (ex) { ex.ss = id; pushEx(ex); } });
       return;
     }
     const ex = parseExerciseLine(line, ln, errors, warnings);
     if (!ex) return;
     if (!day) newDay('Day ' + (grp ? grp.days.length + 1 : 1));
-    day.exercises.push(ex);
+    pushEx(ex);
   });
 
   // expand week ranges (with optional per-week % ramp)
@@ -1156,6 +1222,769 @@ function finishParse(program, errors, warnings) {
   return { program, errors, warnings, stats: { blocks: program.blocks.length, weeks, sessions, exercises: names.size } };
 }
 
+/* ---------------------------------------------------------------------
+   3b. Raw-text importer — a forgiving parser for plans pasted from chats, notes, PDFs and websites.
+   smartParseProgram(text, { weeks, units, hasLift }) -> { program, errors, warnings, stats, meta }
+   Understands "🗓️ DAY 1 — Upper", "Block 1 (Weeks 1-4)", in-day "Block A — Main lift" sections, "Superset A",
+   A1./A2. labels, "4 sets x 6-8 reps", "4x6 @ 80%", RPE / RIR, rest ("rest 90 sec", "2-3 min"), tables,
+   "Sets: 4 / Reps: 8" lists, time / distance sets and per-side work. Pure: no DOM, no app state.
+   --------------------------------------------------------------------- */
+const IMP_WD = {
+  monday: 1, mon: 1, tuesday: 2, tues: 2, tue: 2, wednesday: 3, weds: 3, wed: 3, thursday: 4, thurs: 4, thur: 4, thu: 4, friday: 5, fri: 5, saturday: 6, sat: 6, sunday: 0, sun: 0,
+  pirmdiena: 1, otrdiena: 2, 'trešdiena': 3, ceturtdiena: 4, piektdiena: 5, sestdiena: 6, 'svētdiena': 0
+};
+const IMP_WD_LONG = Object.keys(IMP_WD).filter(k => k.length > 4);
+const IMP_NUMW = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
+const IMP_ACRO = /\b(rdl|ohp|db|bb|kb|ez|ghd|trx|sldl|rfess|bss|hiit|amrap|emom|ssb|pr)\b/gi;
+let IMP_EMO_ONE, IMP_EMO_ALL;
+try { IMP_EMO_ONE = new RegExp('^[\\p{Extended_Pictographic}\\uFE0F\\u20E3\\u200d]+\\s*', 'u'); IMP_EMO_ALL = new RegExp('[\\p{Extended_Pictographic}\\uFE0F\\u20E3\\u200d]+', 'gu'); }
+catch (e) { IMP_EMO_ONE = /^[\u2600-\u27BF\uD83C-\uDBFF\uDC00-\uDFFF\uFE0F\u20E3]+\s*/; IMP_EMO_ALL = /[\u2600-\u27BF\uD83C-\uDBFF\uDC00-\uDFFF\uFE0F\u20E3]+/g; }
+const IMP_CAL = /^[\s*#>_\-•]*(?:\uD83D\uDDD3|\uD83D\uDCC5|\uD83D\uDCC6)/;           // 🗓 📅 📆
+const IMP_BUL = /^(?:[-+•●○◦▪▫■□◆◇▶►▷→➤➔✓✔☑☐·‣⁃>]+)\s*/;
+const IMP_REPS = '(?:amrap|max(?:imum)?(?:\\s*reps?)?|(?:to\\s+)?failure|\\d+\\s*\\+|\\d+(?:\\.\\d+)?(?:\\s*-\\s*\\d+(?:\\.\\d+)?)?(?:\\s*(?:reps?|seconds?|secs?|sec|s|minutes?|mins?|min|meters?|metres?|km|yards?|yds?|yd|feet|ft|steps?|m)(?![a-z]))?)';
+const IMP_SPEC = '(\\d+(?:[.:]\\d+)?(?:\\s*(?:-|to)\\s*\\d+(?:[.:]\\d+)?)?)\\s*(minutes?|mins?|min|m(?![a-z])|seconds?|secs?|sec|s(?![a-z])|\'|")?';
+const IMP_RE = {
+  prog: /^(?:program(?:me)?(?:\s+name)?|plan|routine|split|training\s+plan|workout\s+plan|title)\s*[:\-]\s*(.+)$/i,
+  week: /^(?:weeks?|wks?|nedēļa|nedēļas)\s*(\d+)(?:\s*(?:-|to|through|thru|&|and|,|\/)\s*(\d+))?(?!\d)\s*(.*)$/i,
+  block: /^(?:block|phase|mesocycle|meso|stage)\s*(\d+|[a-z]|[ivx]+)?(?![\p{L}\d])\s*[:.\-)]*\s*(.*)$/iu,
+  day: /^(?:day|diena|session|sesija|workout|training|train)\s*(\d+|[a-z]|one|two|three|four|five|six|seven|eight|nine)(?![\p{L}\d])\s*[:.\-)]*\s*(.*)$/iu,
+  restDay: /^(?:(?:rest|off|recovery|active\s+recovery|mobility|deload)\s*(?:day|\/\s*off)?|day\s*off|rest\s*(?:&|and|\/)\s*recovery|full\s+rest)(?:\s*[:\-(].*)?$/i,
+  xDay: /^([\p{L}][\p{L}&\/ +'-]{1,30}?)\s+day(?:\s*[:\-(].*)?$/iu,
+  ss: /^(?:ss|super[\s-]?sets?|giant[\s-]?sets?|tri[\s-]?sets?|compound[\s-]?sets?|circuit)(?![\p{L}])\s*#?\s*([A-Za-z]|\d+)?(?![\p{L}])\s*[:.\-)]*\s*(.*)$/iu,
+  kv: /^(exercise|movement|lift|name|sets?|reps?|repetitions?|rest|rpe|rir|load|weight|intensity|tempo|notes?|cues?|tips?|focus|instructions?)\s*[:=]\s*(.*)$/i
+};
+const impNum = s => parseFloat(String(s).replace(',', '.'));
+const impEquip = /^(barbell|dumbbells?|db|bb|machine|cable|bodyweight|bw|smith|ez[\s-]?bar|kettlebell|kb|band|bands|weighted|optional|each|per side|sets?|reps?|total)$/i;
+
+function impStrip(s) {
+  s = s.replace(/[*_`~]+/g, '').replace(IMP_EMO_ALL, ' ');
+  for (let k = 0; k < 6; k++) {
+    const b = s;
+    s = s.replace(/^[\s#]+/, '').replace(IMP_BUL, '').replace(/^\[[ xX\u2713]?\]\s*/, '').replace(/^\d{1,2}[.)]\s+(?=[\p{L}])/u, '').replace(/^\s*(?:>\s*)+/, '');
+    if (s === b) break;
+  }
+  return s.replace(/\s+/g, ' ').trim();
+}
+function impNice(s) {
+  s = String(s || '').replace(/\s+/g, ' ').trim();
+  const cut = s.search(/[(\[]/), main = cut > 0 ? s.slice(0, cut) : s, tail = cut > 0 ? s.slice(cut) : '';
+  const letters = main.replace(/[^A-Za-z]/g, '');
+  if (letters.length > 3 && main === main.toUpperCase()) {
+    s = main.toLowerCase().replace(/(^|[\s\-\/(])([a-z])/g, (m, a, b) => a + b.toUpperCase()).replace(IMP_ACRO, w => w.toUpperCase()) + tail;
+  }
+  return s;
+}
+function impCleanTitle(s) {
+  return String(s || '').replace(IMP_EMO_ALL, ' ').replace(/^[\s:.\-,;|)\]]+|[\s:.\-,;|(\[]+$/g, '').replace(/^\(\s*(.*?)\s*\)$/, '$1').replace(/\s+/g, ' ').trim();
+}
+function impLines(text) {
+  const out = [];
+  String(text || '').replace(/\r\n?/g, '\n').split('\n').forEach((raw0, i) => {
+    const raw = raw0.replace(/[\u00a0\u2007\u202f\u3000]/g, ' ').replace(/[\u200b\u200c\u2060\ufeff]/g, '')
+      .replace(/[\u2018\u2019\u2032]/g, "'").replace(/[\u201c\u201d\u2033]/g, '"').replace(/[\u2010-\u2015\u2212]/g, '-').replace(/[×✕✖⨯]/g, 'x').replace(/\t/g, '    ');
+    const tr = raw.trim();
+    if (!tr) { out.push({ ln: i + 1, blank: true }); return; }
+    const L = { ln: i + 1, raw, ind: /^ */.exec(raw)[0].length, cal: IMP_CAL.test(raw), blank: false };
+    if (tr[0] === '|' && (tr.match(/\|/g) || []).length >= 3) {
+      const cells = tr.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => impStrip(c));
+      if (cells.every(c => /^:?-{2,}:?$/.test(c) || !c)) { out.push({ ln: i + 1, blank: false, sepRow: true }); return; }
+      L.cells = cells; out.push(L); return;
+    }
+    const keycap = /^\s*\d\uFE0F?\u20E3/.test(raw0);
+    L.t = impStrip(raw);
+    if (keycap) L.t = L.t.replace(/^\d{1,2}\s+(?=[\p{L}])/u, '');
+    if (!L.t || /^[-=_.~·*\s]{3,}$/.test(L.t) || !/[\p{L}\d]/u.test(L.t)) { out.push({ ln: i + 1, blank: true, sep: true }); return; }
+    out.push(L);
+  });
+  return out;
+}
+
+/* ---- rest ---- */
+function impSpecSec(txt, unit) {
+  txt = String(txt || '').trim(); if (!txt) return null;
+  let m, v;
+  if ((m = /^(\d+):(\d{2})$/.exec(txt))) v = +m[1] * 60 + +m[2];
+  else {
+    const rg = /^(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)$/.exec(txt);
+    const a = rg ? +rg[1] : impNum(txt), b = rg ? +rg[2] : a;
+    if (!(a >= 0) || !(b >= 0)) return null;
+    let mult;
+    const u = String(unit || '').toLowerCase();
+    if (/^(?:m|min|mins|minutes?|')$/.test(u)) mult = 60;
+    else if (/^(?:s|sec|secs|seconds?|")$/.test(u)) mult = 1;
+    else mult = b <= 6 ? 60 : 1;                     // "rest 2" means minutes; "rest 90" means seconds
+    v = (a + b) / 2 * mult;
+  }
+  if (!(v >= 0) || v > 1800) return null;
+  return Math.round(v / 5) * 5;
+}
+/** Pulls every rest instruction out of a line. b = between paired exercises, a = after a set / round. */
+function impRestExtract(t) {
+  let b = null, a = null;
+  const take = (re, fn) => { t = t.replace(re, (...m) => { fn(m); return ' '; }); };
+  const what = w => /exercis|pair|move|superset\s+exercise/i.test(w) ? 'b' : 'a';
+  take(/\brest(?:ing)?\s*[:=]?\s*(\d+)\s*\/\s*(\d+)\s*(?:s|sec|secs)?(?![\p{L}])/giu, m => { b = +m[1]; a = +m[2]; });
+  take(new RegExp('(?:\\brest(?:ing)?\\s*[:=]?\\s*(?:of\\s+|for\\s+|about\\s+|~\\s*)?)?' + IMP_SPEC + '\\s*(?:of\\s+rest\\s*)?(?:rest\\s*)?(?:in\\s+)?(?:between|after|per|b\\/w)\\s+(?:each\\s+|every\\s+|the\\s+|your\\s+)?(sets?|rounds?|exercises?|supersets?|pairs?|circuits?|moves?)', 'gi'),
+    m => { const s = impSpecSec(m[1], m[2]); if (s == null) return; if (what(m[3]) === 'b') b = s; else a = s; });
+  take(new RegExp('\\b(?:rest(?:ing)?(?:\\s*(?:period|time|interval))?|recovery)\\s*[:=]?\\s*(?:of\\s+|for\\s+|about\\s+|~\\s*)?' + IMP_SPEC, 'gi'),
+    m => { const s = impSpecSec(m[1], m[2]); if (s != null) a = s; });
+  take(new RegExp(IMP_SPEC + '\\s*(?:of\\s+)?(?:rest|recovery|pause)\\b', 'gi'),
+    m => { const s = impSpecSec(m[1], m[2]); if (s != null) a = s; });
+  t = t.replace(/\b(?:rest|recovery)\s*(?:period|time)?\s*[:=]?\s*$/i, ' ').replace(/\b(?:no|minimal)\s+rest\b/gi, ' ');
+  return { t, b, a };
+}
+
+/* ---- intensity (percent of 1RM, kg / lb, RPE, RIR, labels) ---- */
+function impIntensity(s, units) {
+  let int = null, rpe = null, note = null;
+  s = s.replace(/(?:@|\bat\b|\bwith\b|\bw\/|~|\bapprox\.?|\babout\b)?\s*(\d{2,3}(?:\.\d+)?)\s*(?:-\s*(\d{2,3}(?:\.\d+)?)\s*)?%\s*(?:of\s+)?(?:(?:your\s+)?(?:1\s*-?\s*rm|one[\s-]?rep[\s-]?max|max|tm|training\s+max|e1rm))?/i, (m0, a, b) => {
+    let v = impNum(a); if (b) { v = Math.round((v + impNum(b)) / 2 * 2) / 2; note = `${a}-${b}% read as ${v}%`; }
+    if (v > 0 && v <= 120) int = { t: 'pct', v };
+    return ' ';
+  });
+  if (!int) s = s.replace(/(?:@|\bat\b|\bwith\b|\busing\b|\bw\/|\+)?\s*(\d+(?:\.\d+)?)\s*(kgs?|kilos?|kilograms?|lbs?|pounds?)\b/i, (m0, a, u) => {
+    let v = impNum(a); const lb = /^(?:lb|pound)/i.test(u);
+    if (lb && units === 'kg') { v = Math.round(v * 0.45359237 * 2) / 2; note = `${a} lb converted to ${v} kg`; }
+    else if (!lb && units === 'lb') { v = Math.round(v * 2.20462 * 2) / 2; note = `${a} kg converted to ${v} lb`; }
+    if (v > 0) int = { t: 'abs', v };
+    return ' ';
+  });
+  const rpeOf = (a, b) => { const x = impNum(a), y = b != null ? impNum(b) : x; return Math.round((x + y) / 2 * 2) / 2; };
+  s = s.replace(/(?:@\s*)?\brpe\s*[:=]?\s*(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?/i, (m0, a, b) => { rpe = rpeOf(a, b); return ' '; });
+  if (rpe == null) s = s.replace(/(?:@\s*)?(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?\s*rpe\b/i, (m0, a, b) => { rpe = rpeOf(a, b); return ' '; });
+  if (rpe == null) s = s.replace(/(?:@\s*)?\brir\s*[:=]?\s*(\d)(?:\s*-\s*(\d))?/i, (m0, a, b) => { rpe = 10 - rpeOf(a, b); return ' '; });
+  if (rpe == null) s = s.replace(/(?:@\s*)?(\d)(?:\s*-\s*(\d))?\s*(?:rir|reps?\s+in\s+reserve|reps?\s+left)\b/i, (m0, a, b) => { rpe = 10 - rpeOf(a, b); return ' '; });
+  if (rpe == null) s = s.replace(/\bleave\s+(\d)(?:\s*-\s*(\d))?\s*reps?\s+in\s+(?:the\s+)?(?:tank|reserve)/i, (m0, a, b) => { rpe = 10 - rpeOf(a, b); return ' '; });
+  if (rpe != null && !(rpe >= 5 && rpe <= 10)) rpe = null;
+  if (!int && rpe == null) s = s.replace(/@\s*(\d+(?:\.\d+)?)\s*$/, (m0, a) => { const v = impNum(a); if (v >= 5 && v <= 10) rpe = v; return ' '; });
+  if (!int) s = s.replace(/(?:@|\bat\b|[-:,(])\s*(heavy|moderate|medium|light)\b(?:\s*(?:load|weight|intensity|effort))?/i, (m0, w) => { int = { t: 'label', v: /^mod/i.test(w) ? 'medium' : w.toLowerCase() }; return ' '; });
+  if (!int) s = s.replace(/^\s*[-,]?\s*(heavy|moderate|medium|light)\b(?!\s*(?:bag|carry))/i, (m0, w) => { int = { t: 'label', v: /^mod/i.test(w) ? 'medium' : w.toLowerCase() }; return ' '; });
+  if (!int) s = s.replace(/\b(heavy|moderate|medium|light)\s+(?:load|weight|intensity|effort)\b/i, (m0, w) => { int = { t: 'label', v: /^mod/i.test(w) ? 'medium' : w.toLowerCase() }; return ' '; });
+  s = s.replace(/\b(?:body\s*weight|bw)\b/ig, ' ').replace(/@/g, ' ');
+  return { int, rpe, note, s };
+}
+
+/* ---- sets x reps ---- */
+function impRepTok(str) {
+  let s = String(str || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  if (/^(?:amrap|max(?:imum)?(?:\s*reps?)?|(?:to\s+)?failure)$/.test(s)) return { reps: 1, repsText: 'AMRAP' };
+  let m;
+  if ((m = /^(\d+)\s*\+$/.exec(s))) return { reps: +m[1], repsText: m[1] + '+' };
+  if ((m = /^(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?\s*(reps?|steps?)?$/.exec(s))) {
+    const a = Math.round(+m[1]), b = m[2] != null ? Math.round(+m[2]) : null;
+    if (b != null && b < a) return null;
+    return { reps: a, repsText: b != null ? `${a}-${b}` : String(a) };
+  }
+  if ((m = /^(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?\s*(seconds?|secs?|sec|s|minutes?|mins?|min|meters?|metres?|km|yards?|yds?|yd|feet|ft|m)$/.exec(s))) {
+    const u = /^(?:s|sec)/.test(m[3]) ? 's' : /^min/.test(m[3]) ? 'min' : /^(?:meter|metre|m$)/.test(m[3]) ? 'm' : /^y/.test(m[3]) ? 'yd' : /^(?:f)/.test(m[3]) ? 'ft' : m[3];
+    const a = Math.round(+m[1] * 10) / 10, b = m[2] != null ? Math.round(+m[2] * 10) / 10 : null;
+    if (b != null && b < a) return null;
+    return parseRepsToken(`${a}${b != null ? '-' + b : ''}${u}`);
+  }
+  return null;
+}
+/** Every "sets x reps" in a line: [{ idx, end, n, rep }] — several set groups per line are allowed. */
+function impFindRx(t) {
+  let hits = [];
+  const A = new RegExp('(\\d{1,2})\\s*(?:(?:sets?|rounds?|rds?)\\s*(?:x|of|by)?|x|by)\\s*(' + IMP_REPS + ')', 'gi');
+  let m;
+  while ((m = A.exec(t))) {
+    const prev = m.index > 0 ? t[m.index - 1] : ' ';
+    if (/[\d.]/.test(prev)) { A.lastIndex = m.index + 1; continue; }
+    const rep = impRepTok(m[2]);
+    if (!rep) continue;
+    hits.push({ idx: m.index, end: m.index + m[0].length, n: +m[1], rep });
+  }
+  if (hits.length) return hits;
+  const add = (mm, n, repStr) => { const rep = impRepTok(repStr); if (rep && n >= 1) hits.push({ idx: mm.index, end: mm.index + mm[0].length, n, rep }); };
+  let mm;
+  const pyr = /(?:sets?\s*(?:of|:)\s*)?(\d{1,3}(?:\s*[\/,-]\s*\d{1,3}){2,})\s*(?:reps?\b)?/i;
+  if ((mm = /(?:sets?\s*(?:of|:)\s*)?(\d{1,3}(?:\s*[\/,]\s*\d{1,3}){2,})\s*reps?\b/i.exec(t)) || (mm = /sets?\s*(?:of|:)\s*(\d{1,3}(?:\s*[\/,]\s*\d{1,3}){2,})/i.exec(t))) {
+    const seq = mm[1].split(/\s*[\/,]\s*/); const reps = seq.map(x => impRepTok(x));
+    if (reps.every(Boolean)) { reps.forEach((rep, i) => hits.push({ idx: i ? mm.index : mm.index, end: mm.index + mm[0].length, n: 1, rep })); return hits; }
+  }
+  if ((mm = /(\d{1,2})\s*sets?\b[\s,;:\/-]*(?:of\s+)?(\d+(?:\s*-\s*\d+)?\s*\+?)\s*(?:reps?\b|each\b)?/i.exec(t))) { add(mm, +mm[1], mm[2]); if (hits.length) return hits; }
+  if ((mm = /(\d+(?:\s*-\s*\d+)?\s*\+?)\s*reps?\s*(?:x|,|for|-|\/|per\s+set)?\s*(\d{1,2})\s*(?:sets?|rounds?)\b/i.exec(t))) { add(mm, +mm[2], mm[1]); if (hits.length) return hits; }
+  let ms = /\bsets?\s*[:=]\s*(\d{1,2})\b/i.exec(t), mr = new RegExp('\\breps?\\s*[:=]\\s*(' + IMP_REPS + ')', 'i').exec(t);
+  if (ms && mr) { const rep = impRepTok(mr[1]); if (rep) { const i0 = Math.min(ms.index, mr.index), e0 = Math.max(ms.index + ms[0].length, mr.index + mr[0].length); hits.push({ idx: i0, end: e0, n: +ms[1], rep }); return hits; } }
+  void pyr;
+  return hits;
+}
+/** Reps without a set count: "x 8", "10 reps", "45 sec" — the set count comes from the group (or defaults to 1). */
+function impFindLoose(t) {
+  let mm;
+  if ((mm = new RegExp('(?:^|\\s)x\\s*(' + IMP_REPS + ')(?![\\p{L}\\d])', 'iu').exec(t))) { const rep = impRepTok(mm[1]); if (rep) return { idx: mm.index, end: mm.index + mm[0].length, n: null, rep }; }
+  if ((mm = /(?:^|[\s:,-])(\d+(?:\s*-\s*\d+)?\s*\+?)\s*reps?\b/i.exec(t))) { const rep = impRepTok(mm[1]); if (rep) return { idx: mm.index, end: mm.index + mm[0].length, n: null, rep }; }
+  if ((mm = /(?:^|[\s:,-])(\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?\s*(?:seconds?|secs?|sec|s|minutes?|mins?|min|meters?|metres?|km|yards?|yds?|yd|m|ft))(?![\p{L}\d])/iu.exec(t))) { const rep = impRepTok(mm[1]); if (rep) return { idx: mm.index, end: mm.index + mm[0].length, n: null, rep }; }
+  return null;
+}
+const impHasRx = t => impFindRx(t).length > 0;
+const impMainLift = n => /\b(squat|bench|deadlift|dead\s*lift|overhead\s+press|ohp|military\s+press|shoulder\s+press|barbell\s+row|bent[\s-]?over\s+row|pendlay|romanian|rdl|hip\s+thrust|clean|snatch|push\s+press|good\s+morning)\b/i.test(n) && !/\b(split|goblet|lunge|step[\s-]?up|jump|single[\s-]?leg|one[\s-]?leg|bodyweight|wall)\b/i.test(n);
+const impRpePct = (rpe, reps) => { const t = reps + (10 - rpe); return Math.max(40, Math.min(100, Math.round(100 / (1 + t / 30) * 2) / 2)); };
+
+/** One exercise line -> a draft { name, rx:[{n,rep,int,rpe}], rest, cues, per, lab, linkNext, linkPrev } or null. */
+function impExerciseLine(t0, ctx) {
+  const d = { cues: [], rest: null, per: false, lab: null, linkNext: false, linkPrev: false, notes: [], msgs: [] };
+  let t = ' ' + t0 + ' ', m;
+  if ((m = /^\s*([A-Za-z])(\d)\s*[.):\-]\s*/.exec(t))) { d.lab = { g: m[1].toUpperCase(), i: +m[2] }; t = ' ' + t.slice(m[0].length); }
+  else if ((m = /^\s*(\d)([A-Za-z])\s*[.):\-]\s*/.exec(t))) { d.lab = { g: m[1], i: m[2].toLowerCase().charCodeAt(0) - 96 }; t = ' ' + t.slice(m[0].length); }
+  else if ((m = /^\s*([A-Za-z])\s*[.)]\s+(?=\S)/.exec(t))) t = ' ' + t.slice(m[0].length);
+  if (t.includes('|')) {
+    const parts = t.split('|'); t = parts.shift(); let lk = '';
+    parts.forEach(pt => {
+      const tx = pt.trim(); if (!tx) return;
+      const mm = /^(alts?|alternatives?|cues?|rest|sec(?:tion)?)\b\s*:?\s*(.*)$/i.exec(tx);
+      if (mm) {
+        lk = /^a/i.test(mm[1]) ? 'a' : /^c/i.test(mm[1]) ? 'c' : /^s/i.test(mm[1]) ? 's' : 'r';
+        if (lk === 'a') d.alts = (d.alts || []).concat(mm[2].split(/\s*\/\s*/).map(x => x.trim()).filter(Boolean));
+        else if (lk === 'c') mm[2].split(/\s*[\/;]\s*/).map(x => x.trim().slice(0, 48)).filter(Boolean).forEach(x => d.cues.push(x));
+        else if (lk === 's') { const v = mm[2].trim().slice(0, 40); d.sec = /^(?:none|-|off)?$/i.test(v) ? '' : v; }
+        else { const rs = parseRestSpec(mm[2]); if (rs) d.rest = rs; else t += ' rest ' + mm[2]; }
+      } else if (lk === 'a') d.alts = (d.alts || []).concat(tx.split(/\s*\/\s*/).map(x => x.trim()).filter(Boolean));
+      else t += ' ' + tx;
+    });
+    t = ' ' + t + ' ';
+  }
+  t = t.replace(/[(\[]?\s*(?:super[\s-]?set(?:ted)?|ss)\s*(?:with|w\/|\+|->|=>)?\s*(?:the\s+)?(next|below|following|previous|above|prior)(?:\s+exercise)?\s*[)\]]?/ig, (m0, w) => { if (/^(?:next|below|following)$/i.test(w)) d.linkNext = true; else d.linkPrev = true; return ' '; });
+  const R = impRestExtract(t); t = R.t; if (R.a != null || R.b != null) d.rest = { b: R.b, a: R.a };
+  t = t.replace(/\btempo\s*[:=]?\s*([0-9xX]{1,2}(?:\s*-\s*[0-9xX]{1,2}){2,3})\b/ig, (m0, tp) => { d.cues.push('Tempo ' + tp.replace(/\s/g, '')); return ' '; });
+  t = t.replace(/[(,;]?\s*\b(?:each|per|every)\s+(?:side|leg|arm|hand|direction|way)\b\s*\)?|\b(?:e\/s|ea\.?|each)\s*$/ig, () => { d.per = true; return ' '; });
+  t = t.replace(/(\d)\s*\/\s*(?:side|leg|arm|hand)\b/ig, (m0, dg) => { d.per = true; return dg + ' '; });
+  t = t.replace(/[(\[]([^()\[\]]*)[)\]]/g, (m0, inner) => {
+    if (impHasRx(inner) || /%|\brpe\b|\brir\b|\brest\b|\d\s*(?:kg|lbs?)\b/i.test(inner)) return ' ' + inner + ' ';
+    const tx = inner.trim();
+    if (tx && tx.length <= 60 && !/^\d+$/.test(tx) && !impEquip.test(tx)) d.notes.push(tx);
+    return ' ';
+  });
+  const hits = impFindRx(t);
+  let name = '', rx = [];
+  if (hits.length) {
+    const head = t.slice(0, hits[0].idx);
+    const segs = hits.map((h, i) => t.slice(h.end, i + 1 < hits.length ? hits[i + 1].idx : t.length));
+    // several groups from one match (pyramid) share one intensity window
+    const uniq = hits.length > 1 && hits.every(h => h.idx === hits[0].idx);
+    let tails = [], first = true;
+    if (uniq) { const I = impIntensity(segs[0], ctx.units); rx = hits.map(h => ({ n: h.n, rep: h.rep, int: I.int, rpe: I.rpe })); tails.push(I.s); if (I.note) d.msgs.push(I.note); }
+    else hits.forEach((h, i) => {
+      const I = impIntensity(segs[i], ctx.units);
+      rx.push({ n: h.n, rep: h.rep, int: I.int, rpe: I.rpe }); tails.push(I.s); if (I.note) d.msgs.push(I.note);
+    });
+    let headS = head;
+    if (rx.length && rx.every(r => !r.int && r.rpe == null)) {       // intensity written before the sets ("@ 80% 4 x 6")
+      const I = impIntensity(headS, ctx.units);
+      if (I.int || I.rpe != null) { rx.forEach(r => { r.int = I.int; r.rpe = I.rpe; }); headS = I.s; if (I.note) d.msgs.push(I.note); }
+    }
+    const nameSrc = headS.replace(/[\s:\-,;.|@]+$/, '').trim();
+    if (impLetters(nameSrc) >= 2) { name = nameSrc; tails.forEach(x => impNote(d, x)); }
+    else { const firstTail = tails.findIndex(x => impLetters(x) >= 2); if (firstTail >= 0) { name = tails[firstTail]; tails.forEach((x, i) => { if (i !== firstTail) impNote(d, x); }); } }
+  } else {
+    const lo = impFindLoose(t);
+    if (!lo) return null;
+    const head = t.slice(0, lo.idx), tail = t.slice(lo.end);
+    const I = impIntensity(head + ' ' + tail, ctx.units);
+    rx = [{ n: lo.n, rep: lo.rep, int: I.int, rpe: I.rpe }];
+    if (I.note) d.msgs.push(I.note);
+    const nm = impIntensity(head, ctx.units).s.replace(/[\s:\-,;.|@]+$/, '').trim();
+    if (impLetters(nm) >= 2) { name = nm; impNote(d, impIntensity(tail, ctx.units).s); }
+    else { const tl = impIntensity(tail, ctx.units).s.replace(/^[\s:\-,;.|@]+|[\s:\-,;.|@]+$/g, '').trim(); if (impLetters(tl) >= 2) name = tl; }
+    d.loose = true;
+  }
+  d.name = impName(name);
+  d.rx = rx;
+  if (d.per) d.cues.unshift('Each side');
+  d.notes.forEach(n => { if (d.cues.length < 6) d.cues.push(n.slice(0, 48)); });
+  return d;
+}
+const impLetters = s => (String(s || '').match(/\p{L}/gu) || []).length;
+function impNote(d, s) {
+  const tx = String(s || '').replace(/[()\[\]]/g, ' ').replace(/^[\s:\-,;.|@]+|[\s:\-,;.|@]+$/g, '').replace(/\s+/g, ' ').trim();
+  if (tx.length >= 3 && tx.length <= 60 && impLetters(tx) >= 3 && !impEquip.test(tx)) d.notes.push(tx);
+}
+function impName(s) {
+  s = String(s || '').replace(/^(?:exercise|movement|lift)\s*[:\-]\s*/i, '').replace(/\[[^\]]*\]/g, ' ').replace(/^[\s:\-,;.|@+&]+|[\s:\-,;.|@+&]+$/g, '').replace(/\b(?:for|of|at|with|x)\s*$/i, '').replace(/\s+/g, ' ').trim();
+  s = impNice(s);
+  return s.slice(0, 60);
+}
+const impNameLike = t => {
+  const s = String(t || '').replace(/[:\-]+$/, '').trim();
+  return s.length >= 2 && s.length <= 60 && /^[\p{L}][\p{L}0-9 '&\/+.\-()]*$/u.test(s) && s.split(' ').length <= 7 && !/[.!?]$/.test(s)
+    && !/^(?:focus|keep|use|aim|try|perform|do|make|remember|note|tip|stay|warm|cool|stretch|finish|start|the|this|these|your|if|when|each|all|choose|pick|rest|total|goal|optional|then|and|or|but|here|below|above)\b/i.test(s);
+};
+
+/* ---- line classification ---- */
+function impPeel(t) {
+  const marks = []; let rest = t;
+  for (let g = 0; g < 4 && rest; g++) {
+    let m;
+    if ((m = IMP_RE.week.exec(rest))) {
+      let a = +m[1], b = m[2] ? +m[2] : a; if (b < a) { const x = a; a = b; b = x; }
+      const after = (m[3] || '').replace(/^[\s:.\-,;|)(\]\[]+/, '');
+      const mk = { k: 'week', a, b, label: '' }; marks.push(mk);
+      if (/^(?:day|diena|session|workout|block|phase)\b/i.test(after) || impWdLead(after)) { rest = after; continue; }
+      mk.label = after; rest = ''; break;
+    }
+    if ((m = IMP_RE.block.exec(rest))) { marks.push({ k: 'block', ident: m[1] || '', title: m[2] || '' }); rest = ''; break; }
+    if ((m = IMP_RE.day.exec(rest))) {
+      const n = /^\d+$/.test(m[1]) ? +m[1] : IMP_NUMW[m[1].toLowerCase()] || (m[1].length === 1 ? m[1].toUpperCase() : null);
+      marks.push({ k: 'day', n, title: m[2] || '' }); rest = ''; break;
+    }
+    break;
+  }
+  return { marks, rest };
+}
+function impWdLead(s) {
+  const m = new RegExp('^(' + Object.keys(IMP_WD).sort((a, b) => b.length - a.length).join('|') + ')(?![\\p{L}])\\.?\\s*(.*)$', 'iu').exec(s);
+  return m ? { wd: IMP_WD[m[1].toLowerCase()], rest: m[2] || '' } : null;
+}
+/** Weekday words in a day title: the first one wins and is removed. */
+function impDayTitle(title, wdLead) {
+  let wd = wdLead != null ? wdLead : null, s = String(title || ''), m;
+  const names = Object.keys(IMP_WD).sort((x, y) => y.length - x.length).join('|');
+  if ((m = new RegExp('\\(\\s*(' + names + ')\\.?\\s*\\)', 'iu').exec(s))) { if (wd == null) wd = IMP_WD[m[1].toLowerCase()]; s = s.replace(m[0], ' '); }
+  else if ((m = new RegExp('(^|[^\\p{L}])(' + IMP_WD_LONG.join('|') + ')(?![\\p{L}])\\.?', 'iu').exec(s))) { if (wd == null) wd = IMP_WD[m[2].toLowerCase()]; s = s.replace(m[0], m[1] + ' '); }
+  s = impCleanTitle(s.replace(/[(\[]\s*[)\]]/g, ' ').replace(/\s+[-:]\s*$/, ''));
+  return { wd, title: s };
+}
+const impBlockWeeks = title => {
+  let hint = null, s = String(title || '');
+  let m = /\(?\b(?:weeks?|wks?)\s*(\d+)\s*(?:-|to|through)\s*(\d+)\)?/i.exec(s);
+  if (m) { hint = { range: [+m[1], +m[2]] }; s = s.replace(m[0], ' '); }
+  else if ((m = /\(?\b(\d{1,2})[\s-]*(?:weeks?|wks?)\b\)?/i.exec(s))) { hint = { n: +m[1] }; s = s.replace(m[0], ' '); }
+  else if ((m = /\(?\b(?:week|wk)\s*(\d+)\)?/i.exec(s))) { hint = { range: [+m[1], +m[1]] }; s = s.replace(m[0], ' '); }
+  return { hint, title: impCleanTitle(s) };
+};
+
+/** Turns one text line into an item the builder understands. */
+function impItem(L, units) {
+  const it = { l: L, t: L.t };
+  if (L.cells) { it.kind = 'row'; return it; }
+  const t = L.t; let m;
+  const pe = impPeel(t);
+  if (pe.marks.length) { it.kind = 'marks'; it.marks = pe.marks; it.rest = pe.rest; return it; }
+  if ((m = IMP_RE.prog.exec(t)) && !impHasRx(t)) { it.kind = 'prog'; it.name = m[1].trim(); return it; }
+  const hasRx = impHasRx(t);
+  if (!hasRx) {
+    const wl = impWdLead(t);
+    if (wl && t.length <= 90 && !/^(?:sun|sat|mon|wed|tue)\s+\d/i.test(t)) { it.kind = 'marks'; it.marks = [{ k: 'day', n: null, title: wl.rest, wd: wl.wd }]; it.rest = ''; return it; }
+    if (IMP_RE.restDay.test(t) && /\bday\b|\boff\b/i.test(t)) { it.kind = 'marks'; it.marks = [{ k: 'day', n: null, title: t, restDay: true }]; it.rest = ''; return it; }
+    if (L.cal) { it.kind = 'marks'; it.marks = [{ k: 'day', n: null, title: t }]; it.rest = ''; return it; }
+    if ((m = IMP_RE.xDay.exec(t)) && !/\d/.test(m[1])) { it.kind = 'marks'; it.marks = [{ k: 'day', n: null, title: t }]; it.rest = ''; return it; }
+  }
+  if ((m = IMP_RE.ss.exec(t)) && (!/^ss(?![\p{L}])/iu.test(t) || /^ss\s*(?:[A-Za-z]|\d+)?\s*[:.\-)]/i.test(t))) {
+    it.kind = 'ss'; it.label = m[1] || ''; it.rest = m[2] || '';
+    const w = /^[\p{L}]+/u.exec(t)[0].toLowerCase(); it.word = /^giant|^circuit/.test(w) ? 'giant' : /^tri/.test(w) ? 'tri' : 'ss';
+    return it;
+  }
+  if (!hasRx && /^(?:rest(?:ing)?|rest\s+period|recovery|rest\s+between|pause)\b/i.test(t)) {
+    const R = impRestExtract(t);
+    if (R.a != null || R.b != null) { it.kind = 'restonly'; it.b = R.b; it.a = R.a; return it; }
+  }
+  if ((m = IMP_RE.kv.exec(t)) && !hasRx) { it.kind = 'kv'; it.key = m[1].toLowerCase().replace(/s$/, ''); it.val = m[2].trim(); return it; }
+  it.kind = hasRx ? 'ex' : 'text';
+  return it;
+}
+
+/** Set / round count, rest and a full "3 x 12" prescription that a superset header may carry. */
+function impGroupOpts(text) {
+  const o = { sets: null, rx: null, b: null, a: null };
+  const R = impRestExtract(String(text || '')); o.b = R.b; o.a = R.a;
+  const t = R.t, hits = impFindRx(t);
+  if (hits.length) { o.sets = hits[0].n; o.rx = hits[0].rep; }
+  else { const m = /(\d{1,2})\s*(?:rounds?|sets?|times|rds?)\b/i.exec(t) || /\b(?:rounds?|sets?|repeat)\s*[:x]?\s*(\d{1,2})\b/i.exec(t); if (m) o.sets = +m[1]; }
+  return o;
+}
+const impSectionish = t => /warm|cool|main|accessor|finisher|core|mobility|prehab|conditioning|superset|circuit|strength|primary|secondary|assist|activation|lift/i.test(t);
+
+/** Reps-only lines are exercises only inside a superset, or when they clearly read "Name x 8" / "Name 45 sec". */
+function impLooseOK(t, inGroup) {
+  if (inGroup || /(?:^|\s)x\s*\d|\breps?\b/i.test(t)) return true;
+  const lo = impFindLoose(t);
+  return !!lo && lo.end >= t.replace(/\s+$/, '').length - 1;
+}
+
+function smartParseProgram(text, opts) {
+  opts = opts || {};
+  const units = opts.units === 'lb' ? 'lb' : 'kg', ctx = { units };
+  const errors = [], warnings = [], notes = [], skipped = [], rpeNotes = [];
+  const warn = (line, msg) => warnings.push({ line: line || 0, msg });
+  const lines = impLines(text);
+  const items = lines.map(l => l.blank ? { kind: 'blank', l } : l.sepRow ? { kind: 'sep', l } : impItem(l, units));
+  const hasDayMarks = items.some(it => it.kind === 'marks' && it.marks.some(m => m.k === 'day'));
+
+  /* ---- is a "Block" heading a training block, or a section inside a day? ---- */
+  items.forEach((it, i) => {
+    if (it.kind !== 'marks') return;
+    it.marks.forEach(mk => {
+      if (mk.k !== 'block') return;
+      const bw = impBlockWeeks(mk.title); mk.bw = bw;
+      let next = null;
+      for (let j = i + 1; j < items.length; j++) {
+        const x = items[j];
+        if (x.kind === 'marks') { const f = x.marks[0]; if (f.k === 'block') continue; next = f.k === 'week' || f.k === 'day' ? 'train' : null; break; }
+        if (x.kind === 'ex' || x.kind === 'ss' || x.kind === 'row' || x.kind === 'kv') { next = 'section'; break; }
+        if (x.kind === 'text' && impNameLike(x.t) && items[j + 1] && (items[j + 1].kind === 'ex' || items[j + 1].kind === 'kv')) { next = 'section'; break; }
+      }
+      const numeric = /^\d+$/.test(mk.ident || '');
+      mk.train = bw.hint ? true : next === 'train' ? true : next === 'section' ? (!hasDayMarks && numeric && !impSectionish(bw.title)) : (numeric && !hasDayMarks);
+      if (impHasRx(mk.title)) mk.train = false;
+    });
+  });
+
+  /* ---- builder state ---- */
+  const blocks = [];
+  let progName = null, blk = null, grp = null, day = null, sec = null, secOpts = null, G = null, last = null, cand = null, pend = null, tbl = null, afterBlank = false;
+  const ssId = () => String.fromCharCode(65 + (day.ssN++ % 26));
+  const startBlock = (name, hint, deload) => { endDay(); blk = { name, hint, deload: !!deload, groups: [] }; blocks.push(blk); grp = null; sec = null; secOpts = null; };
+  const startGroup = (a, b, label, deload) => { endDay(); if (!blk) startBlock(null, null, false); grp = { from: a, to: b, label: label || '', deload: !!deload, days: [] }; blk.groups.push(grp); };
+  const startDay = (name, n, wd, rest) => {
+    endDay();
+    if (!grp) startGroup(null, null, '', false);
+    if (!rest && name) {                                                  // a weekly-overview line ("Monday: Upper A") came first: merge it into the real day
+      const key = String(name).toLowerCase().replace(/^day\s*\w+\s*[-:]?\s*/, '').trim();
+      const i = key ? grp.days.findIndex(d => !d.rest && !d.exercises.length && d.name && (d.name.toLowerCase() === key || d.name.toLowerCase() === String(name).toLowerCase())) : -1;
+      if (i >= 0) { if (wd == null) wd = grp.days[i].wd; day = { name, n, wd, rest: false, exercises: [], ssN: 0 }; grp.days[i] = day; sec = null; secOpts = null; return; }
+    }
+    day = { name, n, wd, rest: !!rest, exercises: [], ssN: 0 }; grp.days.push(day); sec = null; secOpts = null;
+  };
+  const ensureDay = () => { if (!day) startDay(null, null, null, false); return day; };
+  function endDay() { flushPend(); endGroup(); last = null; cand = null; }
+  function endGroup() {
+    if (!G) return;
+    const mem = G.members;
+    if (!mem.length && G.kind === 'head' && G.txt) warn(G.ln, `I couldn’t read any exercises in “${clip(G.txt, 46)}” — add them as “Name 3 x 12” separated by + or /`);
+    if (mem.length >= 2) {
+      let b = G.b, a = G.a;
+      mem.forEach((ex, k) => {
+        const r = ex._r; delete ex._r; if (!r) return;
+        if (k === mem.length - 1) { if (a == null) a = r.a != null ? r.a : null; if (b == null && r.b != null) b = r.b; }
+        else if (b == null) b = r.b != null ? r.b : r.a != null ? r.a : null;
+      });
+      if (b != null || a != null) mem[0].rest = { b: b, a: a };
+    } else mem.forEach(ex => { const r = ex._r; delete ex._r; delete ex.ss; if (r && r.a != null) ex.rest = { b: null, a: r.a }; });
+    G = null;
+  }
+  const openGroup = o => { endGroup(); ensureDay(); G = Object.assign({ id: ssId(), members: [], sets: null, rx: null, b: null, a: null, cap: 3, label: null, kind: 'head' }, o || {}); return G; };
+
+  /** Rest instruction found on its own line, or in a table / KV — it belongs to the last exercise or superset. */
+  function applyRest(b, a) {
+    if (!last) return false;
+    if (last.ss && G && G.members.includes(last)) { if (b != null) G.b = b; if (a != null) G.a = a; return true; }
+    if (last.ss && day) {
+      const mem = day.exercises.filter(e => e.ss === last.ss);
+      if (mem.length) { const f = mem[0]; f.rest = { b: b != null ? b : f.rest ? f.rest.b : null, a: a != null ? a : f.rest ? f.rest.a : null }; return true; }
+    }
+    const v = a != null ? a : b; if (v != null) last.rest = { b: null, a: v };
+    return true;
+  }
+
+  /** A parsed draft -> an exercise appended to today's list (and to the open superset). */
+  function commit(d, ln) {
+    ensureDay();
+    let name = d.name;
+    if (!name) { warn(ln, 'Skipped a line with sets and reps but no exercise name'); return null; }
+    if (/^(?:warm[\s-]?up|cool[\s-]?down)\b/i.test(name) || /^(?:activation|mobility|stretch(?:ing)?)\s*[:\-]/i.test(name) || name.split(' ').length > 9) { skipped.push({ ln, t: name }); return null; }
+    if (!d.rx.length) return null;
+    // superset membership
+    let join = null;
+    if (d.lab) {
+      if (!(G && (G.label === d.lab.g || (G.kind === 'head' && !G.label)))) { openGroup({ label: d.lab.g, kind: 'label', cap: 99 }); }
+      else if (G.kind === 'head' && !G.label) G.label = d.lab.g;
+      join = G;
+    } else if (G && G.members.length < G.cap && (G.kind === 'head' || G.kind === 'sec' || G.kind === 'link')) join = G;
+    else if (G && G.kind === 'label') { endGroup(); }
+    if (!join && d.linkPrev && last && !last.ss) { openGroup({ kind: 'link', cap: 2 }); G.members.push(last); last.ss = G.id; join = G; }
+    if (!join && d.linkNext) { openGroup({ kind: 'link', cap: 2 }); join = G; }
+    if (!join && secOpts && secOpts.ss && !G) { openGroup({ kind: 'sec', cap: 99, sets: secOpts.sets, rx: secOpts.rx, b: secOpts.b, a: secOpts.a }); join = G; }
+    if (!join && G) endGroup();
+    // sets
+    const sets = [];
+    const gN = join ? (join.sets != null ? join.sets : (join.members[0] && join.members[0]._n) || null) : null;
+    let nUsed = null;
+    d.rx.forEach(r => {
+      let n = r.n != null ? r.n : gN;
+      if (n == null) { n = 1; warn(ln, `No set count for “${name}” — read as 1 set`); }
+      if (n > 20) { warn(ln, `${n} sets of “${name}” looks wrong — capped at 20`); n = 20; }
+      let int = r.int ? Object.assign({}, r.int) : null, rr = r.rep;
+      if (!int && r.rpe != null) {
+        const hl = typeof opts.hasLift === 'function' && opts.hasLift(name);
+        if ((hl || impMainLift(name)) && rr.reps <= 12 && !/AMRAP/.test(rr.repsText) && !/[a-z]$/.test(rr.repsText)) {
+          const v = impRpePct(r.rpe, rr.reps); int = { t: 'pct', v }; rpeNotes.push(`${name} RPE ${r.rpe} → ${v}%`);
+        } else if (d.cues.length < 6 && !d.cues.includes('RPE ' + r.rpe)) d.cues.push('RPE ' + r.rpe);
+      }
+      if (int && int.t === 'pct' && !(int.v > 0 && int.v <= 120)) int = null;
+      for (let i = 0; i < n; i++) sets.push({ reps: rr.reps, repsText: rr.repsText, int: int ? Object.assign({}, int) : null });
+      if (nUsed == null) nUsed = n;
+    });
+    if (join && join.rx && sets.length === 0) { /* unreachable: a draft always has a prescription */ }
+    const ex = { name, sets };
+    if (d.cues.length) ex.cues = d.cues.slice(0, 6);
+    if (d.alts && d.alts.length) ex.alts = d.alts.slice(0, 8);
+    if (d.sec !== undefined) { if (d.sec) ex.sec = d.sec; } else if (sec) ex.sec = sec;
+    if (join) { ex.ss = join.id; ex._r = d.rest; ex._n = nUsed; join.members.push(ex); if (join.sets == null && nUsed != null && join.kind !== 'link') join.sets = join.sets; }
+    else if (d.rest) { const v = d.rest.a != null ? d.rest.a : d.rest.b; if (v != null) ex.rest = { b: null, a: v }; }
+    d.msgs.forEach(m => warn(ln, m));
+    day.exercises.push(ex); last = ex; cand = null;
+    return ex;
+  }
+  const cleanEx = ex => { const o = Object.assign({}, ex); delete o._r; delete o._n; return o; };
+
+  /** Exercises written as a name line followed by "Sets: 4 / Reps: 8 / Rest: 90s" lines. */
+  function flushPend() {
+    if (!pend) return;
+    const p = pend; pend = null;
+    if (p.sets != null && p.reps) {
+      const d = { name: impName(p.name), rx: [{ n: p.sets, rep: p.reps, int: p.int, rpe: p.rpe }], cues: p.cues, rest: p.rest, per: false, lab: null, linkNext: false, linkPrev: false, notes: [], msgs: [] };
+      commit(d, p.ln);
+    } else if (p.name) skipped.push({ ln: p.ln, t: p.name });
+  }
+  function startPend(name, ln) { flushPend(); endGroupIfLabelled(); pend = { name, ln, sets: null, reps: null, int: null, rpe: null, rest: null, cues: [] }; cand = null; }
+  const endGroupIfLabelled = () => { if (G && G.kind === 'label') endGroup(); };
+  function kvInto(p, key, val, ln) {
+    if (key === 'set') { const m = /\d{1,2}/.exec(val); if (m) p.sets = +m[0]; }
+    else if (key === 'rep' || key === 'repetition') {
+      const hit = impFindRx(' ' + val + ' ');
+      const mm = hit[0] ? hit[0] : null;
+      const rep = impRepTok(val.replace(/\s*(?:per\s+set|each)\s*$/i, '').trim()) || (mm && mm.rep);
+      if (rep) p.reps = rep; else warn(ln, `Couldn't read reps “${val.slice(0, 30)}”`);
+    } else if (key === 'rest') { const R = impRestExtract('rest ' + val); if (R.a != null || R.b != null) p.rest = { b: R.b, a: R.a }; else { const s = impSpecSec(val.replace(/^\s*(\d+)\s*$/, '$1'), ''); if (s != null) p.rest = { b: null, a: s }; } }
+    else if (key === 'rpe' || key === 'rir') { const I = impIntensity((key === 'rpe' ? 'RPE ' : 'RIR ') + val, units); if (I.rpe != null) p.rpe = I.rpe; }
+    else if (key === 'load' || key === 'weight' || key === 'intensity') { const I = impIntensity(val.replace(/^\s*(\d+(?:\.\d+)?)\s*$/, '$1 kg'), units); if (I.int) p.int = I.int; else if (I.rpe != null) p.rpe = I.rpe; }
+    else if (key === 'tempo') p.cues.push('Tempo ' + val.replace(/\s/g, '').slice(0, 12));
+    else { const tx = val.trim(); if (tx && p.cues.length < 6) p.cues.push(tx.slice(0, 48)); }
+  }
+
+  const clip = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+  const noteCue = (ex, s) => { s = String(s || '').replace(/^(?:note|tip|cue|focus)s?\s*[:\-]\s*/i, '').trim(); if (!ex || !s) return false; ex.cues = ex.cues || []; if (ex.cues.length < 6) ex.cues.push(clip(s, 48)); return true; };
+
+  /** A "Block …" heading, a day marker or a week marker. */
+  function doMarks(it) {
+    endGroup(); flushPend(); cand = null;
+    it.marks.forEach(mk => {
+      if (mk.k === 'week') {
+        const label = String(mk.label || ''), deload = /deload|de-load/i.test(label);
+        startGroup(mk.a, mk.b, label.replace(/\(?\bde-?load\b\)?/ig, '').replace(/^[\s:\-–—()]+|[\s:\-–—()]+$/g, ''), deload);
+      } else if (mk.k === 'block') {
+        if (mk.train) {
+          const bw = mk.bw || impBlockWeeks(mk.title);
+          startBlock(impNice(bw.title) || ('Block ' + (mk.ident || blocks.length + 1)), bw.hint, /\bde-?load\b/i.test(bw.title));
+        } else {
+          let title = mk.title, content = '';
+          title = title.replace(/\([^)]*\)/g, m0 => impHasRx(m0) ? ' ' : m0);
+          if (impHasRx(title)) { const sp = /^(.*?)\s*[:\-]\s+(.*)$/.exec(title); if (sp && impHasRx(sp[2])) { title = sp[1]; content = sp[2]; } else { content = title; title = ''; } }
+          ensureDay(); endGroup();
+          sec = clip(impNice(impCleanTitle(title)) || ('Block ' + (mk.ident || '')).trim(), 40);
+          secOpts = /super\s?set|giant|tri[\s-]?set|circuit/i.test(title) ? Object.assign({ ss: true }, impGroupOpts(title)) : null;
+          if (content) process(impItem(Object.assign({}, it.l, { t: content, cal: false }), units));
+        }
+      } else if (mk.k === 'day') {
+        let raw = mk.title || '', content = '';
+        raw = raw.replace(/\([^)]*\)/g, m0 => impHasRx(m0) ? ' ' : m0);
+        if (impHasRx(raw)) { const sp = /^(.*?)\s*[:\-]\s+(.*)$/.exec(raw); if (sp && impHasRx(sp[2])) { raw = sp[1]; content = sp[2]; } else { content = raw; raw = ''; } }
+        const dt = impDayTitle(raw, mk.wd != null ? mk.wd : null);
+        const rest = !!mk.restDay || (IMP_RE.restDay.test(dt.title) && /^(?:rest|off|recovery|active|mobility|full|day)/i.test(dt.title));
+        const pos = grp ? grp.days.length + 1 : 1;
+        startDay(rest ? (dt.title ? impNice(dt.title) : 'Rest day') : (dt.title ? clip(impNice(dt.title), 50) : ('Day ' + (mk.n || pos))), mk.n, dt.wd, rest);
+        if (content) process(impItem(Object.assign({}, it.l, { t: content, cal: false }), units));
+      }
+    });
+    if (it.rest) process(impItem(Object.assign({}, it.l, { t: it.rest, cal: false }), units));
+  }
+
+  /** A table row becomes the same text the line parser already understands. */
+  function doRow(it) {
+    const cells = it.l.cells, low = cells.map(c => c.toLowerCase());
+    const isHead = low.some(c => /^(?:exercise|movement|lift|name|exercises)\b/.test(c)) && low.some(c => /sets?|reps?|rest|load|rpe|tempo|notes?|intensity/.test(c));
+    if (isHead) {
+      tbl = {}; low.forEach((c, i) => {
+        if (/^(?:exercise|movement|lift|name|exercises)\b/.test(c)) tbl.name = i;
+        else if (/sets?\s*(?:x|×|\/|&|and)\s*reps?|sets\s*\/\s*reps/.test(c)) tbl.sr = i;
+        else if (/^sets?\b/.test(c)) tbl.sets = i;
+        else if (/^reps?\b|repetitions/.test(c)) tbl.reps = i;
+        else if (/rest/.test(c)) tbl.rest = i;
+        else if (/rpe|rir|effort/.test(c)) tbl.rpe = i;
+        else if (/load|weight|intensity|%|kg|lb/.test(c)) tbl.load = i;
+        else if (/tempo/.test(c)) tbl.tempo = i;
+        else if (/note|cue|comment|tip/.test(c)) tbl.note = i;
+      });
+      return;
+    }
+    const nonEmpty = cells.filter(c => c && !/^[-–—]+$/.test(c));
+    if (nonEmpty.length === 1 && !impHasRx(nonEmpty[0])) { process(impItem({ ln: it.l.ln, t: nonEmpty[0], cal: false, blank: false }, units)); return; }
+    if (!tbl) tbl = { name: 0, sr: cells.length > 2 ? undefined : 1, sets: cells.length > 2 ? 1 : undefined, reps: cells.length > 2 ? 2 : undefined, rest: cells.length > 3 ? 3 : undefined };
+    const c = i => (i == null ? '' : (cells[i] || '').replace(/^[-–—]+$/, '').trim());
+    const name = c(tbl.name); if (!name) return;
+    let rx = '';
+    if (tbl.sr != null) rx = c(tbl.sr);
+    else if (c(tbl.sets) && c(tbl.reps)) rx = /^\d+$/.test(c(tbl.sets)) ? `${c(tbl.sets)} x ${c(tbl.reps)}` : `${c(tbl.sets)} ${c(tbl.reps)}`;
+    else rx = (c(tbl.sets) + ' ' + c(tbl.reps)).trim();
+    const loadTxt = c(tbl.load), rpeTxt = c(tbl.rpe);
+    const line = `${name} ${rx}${loadTxt ? ' @ ' + (/^\d+(?:\.\d+)?$/.test(loadTxt) ? loadTxt + ' kg' : loadTxt) : ''}${rpeTxt ? ' RPE ' + rpeTxt.replace(/^rpe\s*/i, '') : ''}${c(tbl.rest) ? ' rest ' + c(tbl.rest) : ''}${c(tbl.tempo) ? ' tempo ' + c(tbl.tempo) : ''}${c(tbl.note) ? ' (' + c(tbl.note) + ')' : ''}`;
+    process(impItem({ ln: it.l.ln, t: line, cal: false, blank: false }, units));
+  }
+
+  /** Superset / circuit heading — either just the heading, or the whole group on one line (joined by + & with / ; ,). */
+  function doSS(it, ln) {
+    ensureDay(); endGroup(); flushPend(); cand = null;
+    const o = impGroupOpts(it.rest), text = it.rest, label = it.label ? String(it.label).toUpperCase() : null;
+    let parts = null;
+    if (/\s\+\s|\s&\s|\swith\s/i.test(text) && impFindRx(text).length) parts = text.split(/\s+\+\s+|\s+&\s+|\s+with\s+/i).map(x => x.trim()).filter(Boolean);
+    else {
+      // "Tri-set (3 rounds): Push-up x 15, Row x 12, Squat x 15 — rest 90 s" / "Curl 3x12 / Pushdown 3x12"
+      const body = impRestExtract(text).t.replace(/^\s*[(\[]?\s*(?:\d{1,2}\s*(?:rounds?|sets?|rds?|times)|(?:rounds?|sets?)\s*[:x]?\s*\d{1,2})[^):\]]*[)\]]?\s*[:\-–—]*\s*/i, '').trim();
+      const lp = body.split(/\s*;\s*|\s+\/\s+|\s*,\s+(?=[A-Za-z])/).map(x => x.trim()).filter(Boolean);
+      if (lp.length >= 2 && lp.length <= 8 && lp.every(p => /^[\p{L}]/u.test(p) && p.length <= 60) && (o.sets != null || lp.some(p => impFindRx(p).length || impFindLoose(p)))) parts = lp;
+    }
+    if (parts) {
+      const drafts = parts.map(pt => impExerciseLine(pt, ctx));
+      const named = drafts.filter(d => d && (d.name || impNameLike(d.name || '')));
+      const lastRx = drafts.slice().reverse().find(d => d && d.rx && d.rx.length) || (o.sets != null && o.rx ? { rx: [{ n: o.sets, rep: o.rx, int: null, rpe: null }] } : null);
+      if (named.length >= 2 || drafts.some(d => d && d.rx && d.rx.length)) {
+        openGroup({ kind: 'head', cap: Math.max(2, parts.length), sets: o.sets, b: o.b, a: o.a, label, ln, txt: it.t || text });
+        drafts.forEach((d, k) => {
+          if (!d) return;
+          if (!d.rx || !d.rx.length) { if (!lastRx) return; d.rx = lastRx.rx.map(r => Object.assign({}, r)); if (!d.name) d.name = impName(parts[k]); }
+          if (!d.name) d.name = impName(parts[k].replace(/\d.*$/, ''));
+          commit(d, ln);
+        });
+        return;
+      }
+    }
+    const cap = it.word === 'tri' ? 3 : it.word === 'giant' ? 99 : 3;
+    openGroup({ kind: 'head', cap, sets: o.sets, rx: o.rx, b: o.b, a: o.a, label, ln, txt: it.t || text });
+  }
+
+  /** One logical line. */
+  function process(it) {
+    const L = it.l, ln = L.ln;
+    switch (it.kind) {
+      case 'blank': {
+        if (G && G.members.length >= 2 && G.kind !== 'sec') endGroup();
+        if (pend && pend.sets != null && pend.reps) flushPend();
+        afterBlank = true; return;
+      }
+      case 'sep': return;
+      case 'row': doRow(it); return;
+      case 'marks': doMarks(it); return;
+      case 'prog': if (!progName) progName = it.name.slice(0, 60); return;
+      case 'ss': doSS(it, ln); return;
+      case 'restonly': if (pend) { pend.rest = { b: it.b, a: it.a }; return; } if (!applyRest(it.b, it.a)) skipped.push({ ln, t: it.t }); return;
+      case 'kv': {
+        if (['exercise', 'movement', 'lift', 'name'].includes(it.key)) { startPend(impName(it.val), ln); return; }
+        if (!pend && cand) { startPend(cand.name, cand.ln); }
+        if (pend) { kvInto(pend, it.key, it.val, ln); return; }
+        if (['note', 'cue', 'tip', 'focu', 'focus', 'instruction'].includes(it.key) && last) { noteCue(last, it.val); return; }
+        if (it.key === 'rest' && applyRest(...(() => { const R = impRestExtract('rest ' + it.val); return [R.b, R.a]; })())) return;
+        skipped.push({ ln, t: it.t }); return;
+      }
+      case 'ex': {
+        flushPend();
+        const d = impExerciseLine(it.t, ctx);
+        if (!d || !d.rx.length) { skipped.push({ ln, t: it.t }); return; }
+        if (!d.name && cand) d.name = cand.name;
+        afterBlank = false;
+        commit(d, ln); return;
+      }
+      case 'text': {
+        const t = it.t;
+        if (!progName && !blocks.length && !day && !cand && !last && /\b(?:program(?:me)?|plan|routine|split|cycle|template)\b|\b\d+[\s-]*(?:week|wk|day)s?\b/i.test(t) && t.length <= 80 && !/[.!?:]$/.test(t) && !/^(?:here|below|sure|okay|ok|this|these)\b/i.test(t)) { progName = clip(impCleanTitle(impNice(t)), 60); return; }
+        const loose = (G || /(?:^|\s)x\s*\d|\b\d+\s*reps?\b/i.test(t) || /^[^\d]{2,40}[:\-]?\s*\d+\s*(?:sec|secs|seconds?|s|min|mins|minutes?)$/i.test(t)) && !/[.!?]$/.test(t);
+        if (loose && !pend && !(G && G.kind === 'label' && !/^[A-Za-z]\d/.test(t))) {
+          const d = impExerciseLine(t, ctx);
+          if (d && d.rx.length && d.name && impNameLike(d.name) && (!d.loose || impLooseOK(t, !!G))) { commit(d, ln); afterBlank = false; return; }
+        }
+        // a bare name that is followed by "Sets: 4 / Reps: 8" or "4 x 6" on the next line
+        if (impNameLike(t) && !/^(?:warm|cool)/i.test(t)) {
+          if (G && G.rx && !/\d/.test(t)) {      // names only under a "Superset (3 x 12)" heading
+            const d = { name: impName(t), rx: [{ n: G.sets, rep: G.rx, int: null, rpe: null }], cues: [], rest: null, per: false, lab: null, linkNext: false, linkPrev: false, notes: [], msgs: [] };
+            if (d.name) { commit(d, ln); return; }
+          }
+          cand = { name: impName(t.replace(/[:\-]+$/, '')), ln }; return;
+        }
+        if (last && !afterBlank && t.length <= 70 && /^(?:note|tip|cue|focus|keep|pause|tempo|squeeze|drive|brace|control|slow|explode|stay|use|aim)\b/i.test(t)) { noteCue(last, t); return; }
+        cand = null; skipped.push({ ln, t }); return;
+      }
+    }
+  }
+
+  items.forEach(process);
+  endDay();
+
+  /* ---- assemble weeks ---- */
+  let wnext = 1, anyExplicit = false;
+  const outBlocks = [];
+  // “12-week program” in the title, no week numbers in the body: spread the weeks over the training blocks
+  const tw = progName && /(\d+)[\s-]*(?:weeks?|wks?)\b/i.exec(progName), nTrain = blocks.filter(b => b.groups.some(g => g.days.some(d => !d.rest && d.exercises.length))).length || 1;
+  const autoWeeks = tw && +tw[1] >= 1 && +tw[1] <= 52 ? Math.max(1, Math.round(+tw[1] / nTrain)) : 0, perBlock = +opts.weeks || autoWeeks || 1;
+  blocks.forEach((b, bi) => {
+    const weeks = [], dl = new Set();
+    b.groups.forEach(g => { if (g.deload && g.from != null && !g.days.some(d => !d.rest && d.exercises.length)) for (let n = g.from; n <= g.to && n - g.from < 52; n++) dl.add(n); });
+    b.groups.forEach(g => {
+      let from = g.from, to = g.to;
+      if (from != null) anyExplicit = true;
+      if (from == null) {
+        if (b.hint && b.hint.range) { from = b.hint.range[0]; to = b.hint.range[1]; anyExplicit = true; }
+        else { const n = Math.max(1, Math.min(52, (b.hint && b.hint.n) || perBlock)); from = wnext; to = wnext + n - 1; if (b.hint && b.hint.n) anyExplicit = true; }
+      }
+      if (to - from > 51) { warn(0, `A week range can span at most 52 weeks — “${from}-${to}” was shortened`); to = from + 51; }
+      wnext = Math.max(wnext, to + 1);
+      let days = g.days.filter(d => !d.rest && d.exercises.length);
+      const same = /same\s+as\s+(?:week\s*)?(\d+)/i.exec(g.label || '');
+      if (!days.length && same) { const src = weeks.find(w => w.num === +same[1]); if (src) days = src.days.map(d => ({ name: d.name, exercises: d.exercises })); }
+      if (!days.length) { if (!dl.has(from)) warn(0, `Week ${from}${to > from ? '–' + to : ''} has no exercises — skipped`); return; }
+      const seen = {};
+      const named = days.map((d, i) => { let nm = d.name || ('Day ' + (i + 1)); const k = nm.toLowerCase(); seen[k] = (seen[k] || 0) + 1; if (seen[k] > 1) nm += ' ' + seen[k]; return { name: nm, exercises: d.exercises.map(cleanEx) }; });
+      for (let n = from; n <= to; n++) weeks.push({ num: n, label: 'Week ' + n, note: g.label || '', deload: !!(g.deload || b.deload || dl.has(n)), days: clone(named) });
+    });
+    const noCopy = [...dl].filter(n => !weeks.some(w => w.num === n));
+    if (noCopy.length) warn(0, `Deload week ${noCopy[0]} has no workouts to copy — skipped`);
+    if (weeks.length) outBlocks.push({ name: b.name || (blocks.length > 1 ? 'Block ' + (bi + 1) : (progName || 'Block 1')), weeks });
+    else if (b.name) warn(0, `Block “${b.name}” has no exercises — skipped`);
+  });
+
+  const wdHint = [];
+  items.forEach(it => {
+    if (it.kind !== 'text' && it.kind !== 'prog') return;
+    const m = /(?:^|[^\p{L}])((?:mon|tue|wed|thu|fri|sat|sun)[a-z]*(?:\s*(?:[\/,&+-]|and)\s*(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*)+)/iu.exec(it.t);
+    if (m && !wdHint.length) m[1].split(/\s*(?:[\/,&+-]|\band\b)\s*/i).forEach(w => { const k = w.toLowerCase(); const v = IMP_WD[k] != null ? IMP_WD[k] : IMP_WD[k.slice(0, 3)]; if (v != null && !wdHint.includes(v)) wdHint.push(v); });
+  });
+  const sectionsUsed = items.some(it => it.kind === 'marks' && it.marks.some(m => m.k === 'block' && !m.train));
+  if (sectionsUsed) notes.push('“Block …” headings inside a day are kept as section labels above the exercises.');
+  if (items.some(it => it.kind === 'marks' && it.marks.some(m => m.k === 'block' && m.train))) notes.push('“Block …” headings that introduce days are read as training blocks.');
+  if (rpeNotes.length) notes.push('RPE turned into a % of 1RM (Epley estimate): ' + rpeNotes.slice(0, 4).join(', ') + (rpeNotes.length > 4 ? ` …+${rpeNotes.length - 4}` : '') + '. Other RPE targets are kept as cues.');
+  if (!anyExplicit && outBlocks.length) notes.push(`No week numbers found — each block is ${perBlock > 1 ? perBlock + ' weeks' : '1 week'}${!+opts.weeks && autoWeeks ? ', taken from the title' : ''} (set “Weeks per block” to change it; a finished program can be repeated as a new cycle).`);
+  if (skipped.length) warn(0, `Skipped ${plural(skipped.length, 'line')} that didn’t look like exercises, e.g. “${clip(skipped[0].t, 40)}”${skipped[1] ? ' / “' + clip(skipped[1].t, 40) + '”' : ''}`);
+
+  const result = finishParse({ name: progName, blocks: outBlocks }, errors, warnings);
+  result.errors = result.errors.map(e => (!e.line && /^No workouts found/.test(e.msg)) ? { line: 0, msg: 'I couldn’t find any exercises. Each one needs sets and reps, e.g. “Back Squat 4 x 6”, “3 sets of 10 reps” or “Plank 3 x 45 sec”.' } : e);
+
+  /* ---- facts the schedule planner needs: the days of the first week, rest days included ---- */
+  const slots = [], firstDays = (result.program.blocks[0] && result.program.blocks[0].weeks[0] && result.program.blocks[0].weeks[0].days) || [];
+  const firstBlock = blocks.find(b => b.groups.some(g => g.days.length)), g0 = firstBlock && firstBlock.groups.find(g => g.days.some(d => d.exercises.length || d.rest));
+  let ti = 0;
+  if (g0) g0.days.forEach((d, i) => {
+    if (d.rest) { slots.push({ name: d.name || 'Rest day', wd: d.wd == null ? null : d.wd, rest: true, pos: i, min: 0 }); return; }
+    if (!d.exercises.length) return;
+    const pd = firstDays[ti++];                                        // the program's own (de-duplicated) name for this training day
+    slots.push({ name: pd ? pd.name : (d.name || 'Day ' + ti), wd: d.wd == null ? null : d.wd, rest: false, pos: i, min: impDayMinutes(pd ? pd.exercises : d.exercises) });
+  });
+  result.meta = { slots, notes, skipped, rpe: rpeNotes, sections: sectionsUsed, explicitWeeks: anyExplicit, wdHint };
+  return result;
+}
+
+/** Rough session length: ~40 s per set plus rest (the exercise's own, else 90 s), plus a warm-up. */
+function impDayMinutes(exs) {
+  let sec = 8 * 60; const done = new Set();
+  exs.forEach(ex => {
+    if (ex.ss) {
+      if (done.has(ex.ss)) return; done.add(ex.ss);
+      const mem = exs.filter(e => e.ss === ex.ss), rounds = Math.max(...mem.map(e => e.sets.length));
+      const r = (mem.find(e => e.rest) || {}).rest || {};
+      sec += rounds * (mem.length * 40 + (mem.length - 1) * (r.b != null ? r.b : 20) + (r.a != null ? r.a : 75));
+    } else sec += ex.sets.length * (40 + (ex.rest && ex.rest.a != null ? ex.rest.a : (ex.sets.some(s => s.int) ? 120 : 75)));
+  });
+  return Math.max(30, Math.min(150, Math.round(sec / 60 / 5) * 5));
+}
+
 /** JSON import (same structure the app stores). */
 function normalizeProgramJSON(o) {
   const errors = [], warnings = [];
@@ -1182,6 +2011,7 @@ function normalizeProgramJSON(o) {
             ...(Array.isArray(e.alts) && e.alts.length ? { alts: e.alts.map(a => String(a).trim()).filter(Boolean).slice(0, 8) } : {}),
             ...(Array.isArray(e.cues) && e.cues.length ? { cues: e.cues.map(a => String(a).trim().slice(0, 48)).filter(Boolean).slice(0, 6) } : {}),
             ...(typeof e.ss === 'string' && /^[A-Za-z0-9]{1,3}$/.test(e.ss) ? { ss: e.ss } : {}),
+            ...(typeof e.sec === 'string' && e.sec.trim() ? { sec: e.sec.trim().slice(0, 40) } : {}),
             ...(e.rest && typeof e.rest === 'object' ? (() => { const b = e.rest.b == null ? null : clamp(Number(e.rest.b) || 0, 0, 3600), a = e.rest.a == null ? null : clamp(Number(e.rest.a) || 0, 0, 3600); return b == null && a == null ? {} : { rest: { b, a } }; })() : {}),
             sets: e.sets.map(s => {
               const reps = clamp(parseInt(s.reps, 10) || 1, 1, 100);
@@ -1229,7 +2059,7 @@ function serializeProgram(p) {
       out.push(`WEEK ${w.num}${w.deload ? ' DELOAD' : ''}${w.note ? ' - ' + w.note : ''}`);
       w.days.forEach(d => {
         out.push(`DAY: ${d.name}`);
-        const letters = new Map(), cnt = {};
+        const letters = new Map(), cnt = {}; let prevSec = '';
         d.exercises.forEach(ex => { if (ex.ss && !letters.has(ex.ss)) letters.set(ex.ss, String.fromCharCode(65 + letters.size)); });
         d.exercises.forEach(ex => {
           let pre = '';
@@ -1237,7 +2067,8 @@ function serializeProgram(p) {
           out.push(`${pre}${ex.name} ${groupSets(ex.sets).map(g => `${g.n}x${g.repsText}${g.int ? ' @ ' + intName(g.int) : ''}`).join(', ')}`
             + (ex.alts && ex.alts.length ? ' | alt: ' + ex.alts.join(' / ') : '')
             + (ex.cues && ex.cues.length ? ' | cue: ' + ex.cues.join(' / ') : '')
-            + (ex.rest ? ' | rest: ' + restText(ex.rest) : ''));
+            + (ex.rest ? ' | rest: ' + restText(ex.rest) : '')
+            + ((ex.sec || '') !== prevSec ? ' | sec: ' + ((prevSec = ex.sec || '') || 'none') : ''));
         });
       });
     });
@@ -2818,7 +3649,7 @@ function addExerciseModal() {
 function sessionEx(ex) {
   return applyProg({
     id: uid(), name: ex.name, alts: ex.alts ? ex.alts.slice() : [], wu: {},
-    ss: ex.ss || null, rest: ex.rest ? Object.assign({}, ex.rest) : null, cues: ex.cues ? ex.cues.slice() : null,
+    ss: ex.ss || null, rest: ex.rest ? Object.assign({}, ex.rest) : null, cues: ex.cues ? ex.cues.slice() : null, sec: ex.sec || null,
     sets: ex.sets.map(s => ({
       id: uid(), targetReps: s.reps, repsText: s.repsText, int: s.int ? Object.assign({}, s.int) : null,
       wIn: '', rIn: '', eff: null, done: false, targetWeight: null, weight: null, reps: null, e1rm: null, status: null, change: null
@@ -2893,7 +3724,7 @@ function viewHome() {
   const ps = progStats(p);
   const logged = s ? s.exercises.reduce((n, e) => n + e.sets.filter(x => x.done).length, 0) : 0;
   const mood = s && sessionHasLogged(s) ? sessionMood(s) : (st.prs30 && S.logs[0] && Date.now() - S.logs[0].t < 864e5 ? 'cheer' : 'happy');
-  let h = `<section class="card hl" style="padding:18px">
+  let h = googleCardHTML('home') + `<section class="card hl" style="padding:18px">
     <div class="eyebrow">Coach Ducky says</div>
     <div class="hero-q" style="margin-top:10px">
       <div class="bubble"><div>${esc(duckLine())}</div></div>
@@ -2953,12 +3784,14 @@ function renderTabbar() {
   }).join('');
 }
 function render(keepScroll) {
-  const y = window.scrollY;
+  const y = window.scrollY, restoreFocus = impFocusKeeper();
   const views = { home: viewHome, train: viewTrain, programs: viewPrograms, lifts: viewLifts, run: viewRun, sched: viewSched, coach: viewCoach, history: viewHistory };
   $('#view').innerHTML = (views[S.tab] || viewHome)();
+  if (restoreFocus) restoreFocus();
   $('#gearBtn').innerHTML = icon('gear', 22);
   renderCloudBtn();
   renderTabbar();
+  try { gsiMount(); } catch (e) { /* the plain Google button stays */ }
   if (keepScroll) window.scrollTo(0, y);
   if (S.tab === 'coach') scrollChat();
 }
@@ -2976,14 +3809,15 @@ function setTab(t) { S.tab = t; save(); render(); window.scrollTo(0, 0); if (t =
 
 /* ---- Train ---- */
 function emptyTrain() {
-  return `<section class="card hero">
+  return googleCardHTML('first') + `<section class="card hero">
     <div class="hero-duck c" data-action="quack" role="button" aria-label="Tap the duck">${duck(132, 'cheer')}</div>
     <h1>Quack! Welcome to AutoCoach Lift</h1>
     <p class="muted">I'm Coach Ducky 🦆 — your encouraging rubber-duck coach. Enter your 1RMs, add any program, and I'll work out every target weight — then auto-adjust as you get stronger (or need to back off).</p>
     <ol class="steps"><li>Add your baseline 1RMs in <b>Lifts</b></li><li>Paste or write a program in <b>Programs</b></li><li>Log sets in <b>Train</b> — Coach Ducky has your back</li></ol>
     <div class="stack">
       <button class="btn pri block" data-action="load-sample">Try the sample 12-week program</button>
-      <button class="btn block" data-action="new-program">Create my own program</button>
+      <button class="btn block" data-action="imp-focus">Paste my program</button>
+      <button class="btn ghost block" data-action="new-program">Create one by hand</button>
       <button class="btn ghost block" data-action="go-lifts">Set my 1RMs first</button>
     </div>
   </section>`;
@@ -3061,7 +3895,7 @@ function effOptions(mode, cur) {
 
 /* ---- Backup: export / import everything as one JSON file ---- */
 function exportJSON() {
-  const copy = clone(S); copy.settings.apiKey = ''; copy.session = null; copy.timer = null;
+  const copy = clone(S); copy.settings.apiKey = ''; copy.session = null; copy.timer = null; copy.account = null;
   const blob = new Blob([JSON.stringify(copy, null, 1)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
   a.download = `autocoach-backup-${new Date().toISOString().slice(0, 10)}.json`;
@@ -3092,10 +3926,11 @@ function importJSONText(text) {
   const counts = `${Object.keys(o.lifts).length} lifts · ${plural((o.logs || []).length, 'workout')} · ${plural((o.runLogs || []).length, 'run')} · ${plural(o.programs.length, 'program')}`;
   if (!confirm(`Replace everything on this device with this backup?\n\n${counts}${dropped ? `\n(${plural(dropped, 'damaged item')} will be skipped)` : ''}\n\nThis cannot be undone. Export first if you are unsure.${syncImportNote()}`)) return false;
   let prev = null; try { prev = localStorage.getItem(LS_KEY); } catch (e) { /* ignore */ }
-  const key = S.settings.apiKey;
+  const key = S.settings.apiKey, acct = S.account;
+  delete o.account;
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(o));
-    S = loadState(); S.settings.apiKey = key; S.session = null; S.timer = null; stopTick(); renderTimer();
+    S = loadState(); S.settings.apiKey = key; S.account = acct; S.session = null; S.timer = null; stopTick(); renderTimer();
     syncAllowMass(true); save(true); syncAllowMass(false); closeModal(true); render(); window.scrollTo(0, 0);
     toast(`Backup restored: ${counts}`, 'ok', 3800);
     return true;
@@ -3132,6 +3967,7 @@ const CLOUD_LS = 'autocoach-lift:cloud', AUTH_LS = 'autocoach-lift:auth', SYNC_L
 const SYNC_LOCAL_SETTINGS = ['notify', 'notifyAsked', 'bgAudio', 'keepAwake', 'modelMig'];   // device-specific: never synced
 const SYNC_DATA = /^(program|log|runlog|lift|cue|pm):/;                                    // the items that are "your data" (as opposed to settings fields)
 const SYNC_LOCAL_SCHED = ['view', 'day'];                                                     // which days this screen shows
+const GID_RE = /^[\w.-]+\.apps\.googleusercontent\.com$/i;                                     // a Google OAuth “Web application” client ID
 const jget = k => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } };
 const jset = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 const freshMeta = (uid, email) => ({ v: 1, uid: uid || null, email: email || '', h: {}, t: {}, dirty: {}, cursor: '', skew: 0, skewSet: false, last: 0, syncKey: true });
@@ -3145,9 +3981,9 @@ const sync = {
 /* ---- config: constants in the file win; otherwise what was typed into the app ---- */
 function cloudCfg() {
   const f = (typeof AUTOCOACH_CLOUD === 'object' && AUTOCOACH_CLOUD) || {}, l = jget(CLOUD_LS) || {};
-  const url = String(f.url || l.url || '').trim().replace(/\/+$/, ''), key = String(f.anonKey || l.key || '').trim();
+  const url = String(f.url || l.url || '').trim().replace(/\/+$/, ''), key = String(f.anonKey || l.key || '').trim(), gid = String(f.googleClientId || l.gid || '').trim();
   const okUrl = /^https:\/\/[^\s/]+$/i.test(url) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(url);
-  return okUrl && key.length > 20 ? { url, key, fromFile: !!(f.url && f.anonKey) } : null;
+  return okUrl && key.length > 20 ? { url, key, gid: GID_RE.test(gid) ? gid : '', gidFromFile: !!f.googleClientId, fromFile: !!(f.url && f.anonKey) } : null;
 }
 function loadMeta() {
   const m = jget(SYNC_LS);
@@ -3192,6 +4028,7 @@ function syncSnapshot() {
   S.logs.forEach(l => { if (l && typeof l.id === 'string') m.set('log:' + l.id, l); });
   S.runLogs.forEach(r => { if (r && typeof r.id === 'string') m.set('runlog:' + r.id, r); });
   m.set('active', S.activeProgramId || null);
+  if (S.account && typeof S.account === 'object') m.set('acct', S.account);
   return m;
 }
 const upsertById = (arr, id, val, del) => {
@@ -3213,6 +4050,7 @@ function applyKey(key, val, del) {
     case 'log': upsertById(S.logs, id, val, del); break;
     case 'runlog': upsertById(S.runLogs, id, val, del); break;
     case 'active': S.activeProgramId = del ? null : (val || null); break;
+    case 'acct': if (!del && val && typeof val === 'object') S.account = val; break;
     default: break;
   }
 }
@@ -3250,6 +4088,7 @@ function syncScan(full) {
   Object.keys(m.h).forEach(k => {
     if (snap.has(k) || m.h[k] === null) return;
     if (k === 'set:apiKey' && !m.syncKey) return;
+    if (k === 'acct') return;                                        // the profile is never deleted by a local reset
     missing.push(k);
   });
   sync.alert = null;
@@ -3307,6 +4146,8 @@ function syncApplyRows(rows) {
     let val = r.value;
     if (k.startsWith('lift:') && !del && m.dirty[k] && snap.has(k)) {    // both sides changed since they last met
       val = mergeLift(snap.get(k), r.value); m.t[k] = cloudNow(); m.dirty[k] = 1;
+    } else if (k === 'acct' && !del && m.dirty[k] && snap.has(k)) {   // two devices touched the profile while apart: keep both device lists
+      val = mergeAcct(snap.get(k), r.value); m.t[k] = cloudNow(); m.dirty[k] = 1;
     } else { m.t[k] = rt; delete m.dirty[k]; }
     applyKey(k, val, del);
     applied.push(k);
@@ -3359,7 +4200,9 @@ function makeSession(j) {
   if (!j || !j.access_token) return null;
   const pl = jwtPayload(j.access_token), u = j.user || {};
   const exp = Number(j.expires_at) || Number(pl.exp) || Math.floor(Date.now() / 1000) + (Number(j.expires_in) || 3600);
-  return { access_token: j.access_token, refresh_token: j.refresh_token || '', expires_at: exp, user: { id: u.id || pl.sub || '', email: u.email || pl.email || '' } };
+  const um = u.user_metadata || pl.user_metadata || {}, am = u.app_metadata || pl.app_metadata || {};
+  return { access_token: j.access_token, refresh_token: j.refresh_token || '', expires_at: exp,
+    user: { id: u.id || pl.sub || '', email: u.email || pl.email || '', name: String(um.full_name || um.name || '').slice(0, 80), photo: String(um.avatar_url || um.picture || '').slice(0, 300), provider: String(am.provider || '') } };
 }
 function setSession(s) { sync.auth = s; jset(AUTH_LS, s); }
 let refreshing = null;
@@ -3468,7 +4311,9 @@ async function syncRun(reason) {
     } while (sync.again);
     sync.mergeFirst = false;
     sync.meta.last = Date.now(); saveMeta(); sync.err = ''; sync.retryN = 0;
+    if (reason === 'start') cloudProfileTouch();
     setStatus(sync.alert ? 'attention' : 'ok');
+    if (sync.welcomePending && !sync.alert) { sync.welcomePending = false; cloudProfileTouch(); setTimeout(() => cloudWelcome(true), 0); }
   } catch (e) {
     syncFailed(e);
   } finally { sync.busy = false; }
@@ -3523,8 +4368,9 @@ function liveToken() { if (sync.ws && sync.wsSend && sync.auth) sync.wsSend('acc
 async function cloudLink() {
   const u = sync.auth && sync.auth.user; if (!u || !u.id) { cloudSignedOut('Could not read your account — try again'); return; }
   if (!sync.meta) sync.meta = freshMeta();
-  if (sync.meta.uid === u.id) { sync.meta.email = u.email || sync.meta.email; saveMeta(); liveStart(); renderCloudBtn(); return syncRun('link'); }
+  if (sync.meta.uid === u.id) { sync.meta.email = u.email || sync.meta.email; saveMeta(); liveStart(); renderCloudBtn(); await syncRun('link'); await syncSettled(12000); cloudProfileTouch(); return cloudWelcome(!localHasData()); }
   sync.linking = true; setStatus('syncing');
+  let fresh = false;
   try {
     const other = !!sync.meta.uid, has = localHasData();
     const probe = await restCall(`/sync_items?select=key&user_id=eq.${encodeURIComponent(u.id)}&limit=1`, 'GET');
@@ -3532,6 +4378,7 @@ async function cloudLink() {
     let mode = 'merge';
     if ((cloudHas && has) || (other && has)) mode = await askLinkMode(other, cloudHas, u.email);
     if (!mode) { sync.linking = false; await cloudSignOut(false); toast('Not signed in — nothing was changed', 'info'); return; }
+    fresh = !has || mode === 'cloud';                                // an empty device (or one told to take the account's data): load the account's program
     await startLinked(u, mode);
   } catch (e) {
     sync.linking = false;
@@ -3541,8 +4388,13 @@ async function cloudLink() {
   }
   sync.linking = false;
   liveStart();
-  return syncRun('link');
+  await syncRun('link');
+  await syncSettled(12000);                                          // a realtime-triggered sync may already be running: wait for it too
+  if (fresh && (sync.status === 'offline' || sync.status === 'error')) sync.welcomePending = true;
+  cloudProfileTouch();
+  return cloudWelcome(fresh);
 }
+const syncSettled = async ms => { const t0 = Date.now(); while ((sync.busy || sync.again) && Date.now() - t0 < ms) await new Promise(r => setTimeout(r, 100)); };
 const localHasData = () => !!(S.logs.length || S.programs.length || S.runLogs.length || Object.keys(S.lifts).length || Object.keys(S.cues).length || Object.keys(S.prog).length);
 async function startLinked(u, mode) {
   const m = sync.meta = freshMeta(u.id, u.email), now = cloudNow();
@@ -3574,8 +4426,14 @@ async function cloudSignOut(clearDevice) {
     sync.meta = freshMeta(); jset(SYNC_LS, null);
     S = defaults(); stopTick(); timerDoneUntil = 0; renderTimer();
   }
+  if (!clearDevice && S.account) {
+    S.account = null; if (sync.meta) { delete sync.meta.h.acct; delete sync.meta.t.acct; delete sync.meta.dirty.acct; saveMeta(); }
+    try { save(true); } catch (e) { /* ignore */ }
+  }
+  sync.welcomePending = false;
   cloudSignedOut(null); sync.queue = []; sync.pendingCursor = null;
   if (clearDevice) { closeModal(true); render(); window.scrollTo(0, 0); }
+  else render(true);                                                 // the “sign in with Google” card comes back
   renderCloudBtn();
 }
 /** A pending mass-disappearance (looks like lost local data): restore from the cloud or really delete. */
@@ -3608,6 +4466,8 @@ function authMessage(e) {
   if (/password.*(at least|short)|weak_password/i.test(m + c)) return m;
   if (e.status === 429 || /rate limit|over_.*_rate/i.test(m + c)) return 'Too many attempts — wait a minute and try again.';
   if (/unsupported provider|provider is not enabled/i.test(m)) return 'Google sign-in is not switched on in your Supabase project (Authentication → Providers).';
+  if (/nonce/i.test(m + c)) return 'Google sign-in failed its security check — tap the button and try again.';
+  if (/audience|client.?id|bad_id_token|invalid.*id.?token|id.?token/i.test(m + c)) return 'Supabase did not accept this Google Client ID — add it under Authentication → Providers → Google → Client IDs, and check the app address is an authorised JavaScript origin in Google Cloud.';
   return m || 'Something went wrong';
 }
 async function cloudSignIn(email, password) {
@@ -3619,7 +4479,7 @@ async function cloudSignUp(email, password) {
   const j = await authCall('/signup', 'POST', { email, password }, null, '?redirect_to=' + encodeURIComponent(appUrl()));
   const s = makeSession(j);
   if (!s || !s.user.id) return 'confirm';                           // the project requires email confirmation
-  setSession(s); await cloudLink(); return 'in';
+  setSession(s); const w = await cloudLink(); return w === 'welcome' ? 'welcome' : 'in';
 }
 async function cloudGoogle() {
   const url = sync.cfg.url + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent(appUrl());
@@ -3644,8 +4504,77 @@ function handleAuthRedirect() {
   if (err) return { error: err.replace(/\+/g, ' ') };
   const s = makeSession({ access_token: has, refresh_token: hp.get('refresh_token'), expires_at: hp.get('expires_at'), expires_in: hp.get('expires_in') });
   if (!s || !s.user.id) return { error: 'The sign-in link did not contain a valid session.' };
+  if (hp.get('provider_token') && !s.user.provider) s.user.provider = 'google';
   setSession(s);
   return { session: s, type: hp.get('type') || '' };
+}
+
+/* ---- Google Identity Services: Google hands the page an ID token, Supabase turns it into a session ---- */
+async function cloudGoogleToken(idToken, rawNonce) {
+  if (navigator.onLine === false) throw new CloudErr('You are offline — connect to sign in with Google', 0, 'network', true);
+  const s = makeSession(await authCall('/token', 'POST', { provider: 'google', id_token: idToken, nonce: rawNonce }, null, '?grant_type=id_token'));
+  if (!s || !s.user.id) throw new CloudErr('Google sign-in failed', 400, 'bad_session');
+  const c = jwtPayload(idToken);                                     // Google's own claims fill in anything the server did not echo back
+  s.user.provider = s.user.provider || 'google';
+  if (!s.user.name) s.user.name = String(c.name || '').slice(0, 80);
+  if (!s.user.photo) s.user.photo = String(c.picture || '').slice(0, 300);
+  if (!s.user.email) s.user.email = String(c.email || '');
+  setSession(s);
+  return cloudLink();
+}
+
+/* ---- the cloud profile: one small synced item (name, email, photo, devices) that is created at first sign-in ---- */
+const DEV_LS = 'autocoach-lift:dev';
+function deviceId() {
+  let d = jget(DEV_LS);
+  if (typeof d !== 'string' || d.length < 6) { const a = new Uint8Array(6); try { crypto.getRandomValues(a); } catch (e) { a.forEach((_, i) => { a[i] = Math.random() * 256; }); } d = [...a].map(x => x.toString(16).padStart(2, '0')).join(''); jset(DEV_LS, d); }
+  return d;
+}
+function deviceName() {
+  const ua = navigator.userAgent || '';
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac OS X|Macintosh/.test(ua) ? 'Mac' : /CrOS/.test(ua) ? 'Chromebook' : /Linux/.test(ua) ? 'Linux' : 'Device';
+  const br = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+  let app = false; try { app = !!(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches)); } catch (e) { /* ignore */ }
+  return os + (app ? ' (home-screen app)' : br ? ' · ' + br : '');
+}
+function trimDevices(d) {
+  const ks = Object.keys(d || {}).sort((x, y) => (Number(d[y] && d[y].t) || 0) - (Number(d[x] && d[x].t) || 0)).slice(0, 8), out = {};
+  ks.forEach(k => { out[k] = { n: String((d[k] && d[k].n) || 'Device').slice(0, 40), t: Number(d[k] && d[k].t) || 0 }; });
+  return out;
+}
+/** Two devices touched the profile while apart: newest wins the fields, both device lists are kept, the oldest "created" stays. */
+function mergeAcct(a, b) {
+  a = a || {}; b = b || {};
+  const base = (Number(b.lastSeen) || 0) >= (Number(a.lastSeen) || 0) ? b : a, other = base === b ? a : b;
+  const out = JSON.parse(JSON.stringify(base)), dev = JSON.parse(JSON.stringify(other.devices || {}));
+  Object.keys(base.devices || {}).forEach(k => { if (!dev[k] || (Number(base.devices[k].t) || 0) >= (Number(dev[k].t) || 0)) dev[k] = base.devices[k]; });
+  out.devices = trimDevices(dev);
+  const cr = [a.created, b.created].map(Number).filter(x => x > 0);
+  if (cr.length) out.created = Math.min(...cr);
+  return out;
+}
+/** Creates the profile on first sign-in and keeps it fresh (at most every 12 h per device). It rides on the normal sync. */
+function cloudProfileTouch() {
+  try {
+    const u = sync.auth && sync.auth.user; if (!u || !u.id || !sync.meta || sync.meta.uid !== u.id) return;
+    const now = Date.now(), id = deviceId(), dn = deviceName();
+    const old = S.account && typeof S.account === 'object' && S.account.uid === u.id ? S.account : null;
+    if (!old && sync.meta.h && sync.meta.h.acct) {                    // the cloud already has this profile but this copy lost it: fetch it again instead of starting a new one
+      delete sync.meta.h.acct; delete sync.meta.t.acct; delete sync.meta.dirty.acct; sync.meta.cursor = ''; saveMeta(); syncSoon(300); return;
+    }
+    const a = old ? JSON.parse(JSON.stringify(old)) : { v: 1, uid: u.id, created: now, lastSeen: now, devices: {} };
+    a.v = 1; a.uid = u.id;
+    a.email = u.email || a.email || '';
+    a.name = u.name || a.name || '';
+    a.photo = u.photo || a.photo || '';
+    a.provider = u.provider || a.provider || 'email';
+    a.created = Number(a.created) || now;
+    a.devices = a.devices && typeof a.devices === 'object' ? a.devices : {};
+    const d = a.devices[id];
+    if (!d || d.n !== dn || now - (Number(d.t) || 0) > 12 * 36e5) { a.devices[id] = { n: dn, t: now }; a.lastSeen = now; a.devices = trimDevices(a.devices); }
+    if (old && canon(old) === canon(a)) return;
+    S.account = a; save(true);
+  } catch (e) { console.warn('profile update failed', e); }
 }
 
 /* ---- start-up ---- */
@@ -3773,14 +4702,17 @@ function cloudConfigModal() {
       <div class="field"><label for="cUrl">Project URL</label><input id="cUrl" class="txt" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="https://abcdxyz.supabase.co" value="${esc(l.url || '')}"></div>
       <div class="field"><label for="cKey">Publishable (anon) key</label><input id="cKey" class="txt" autocapitalize="off" spellcheck="false" placeholder="sb_publishable_… or eyJ…" value="${esc(l.key || '')}">
         <div class="hint">Both values are meant to be public — your data is protected by sign-in and row-level security. To have every device pick them up automatically, set them in <b>AUTOCOACH_CLOUD</b> at the top of the script instead.</div></div>
+      <div class="field"><label for="cGid">Google client ID <span class="muted">(optional)</span></label><input id="cGid" class="txt" autocapitalize="off" spellcheck="false" placeholder="1234567890-abc….apps.googleusercontent.com" value="${esc(l.gid || '')}">
+        <div class="hint">Switches on the official one-tap “Sign in with Google” button. Create a Web-application client in Google Cloud and list the same ID in Supabase → Authentication → Providers → Google → Client IDs. The setup guide has the steps.</div></div>
       <div class="cloud-err" id="cErr" role="alert"></div>`,
     footer: `<button class="btn ghost" data-action="m:guide">Setup guide</button><button class="btn pri grow" data-action="m:savecfg">Save</button>`,
     actions: {
       __cloud: true,
       guide() { cloudGuideModal(); },
       savecfg() {
-        const url = $('#cUrl').value.trim().replace(/\/+$/, ''), key = $('#cKey').value.trim();
-        jset(CLOUD_LS, { url, key });
+        const url = $('#cUrl').value.trim().replace(/\/+$/, ''), key = $('#cKey').value.trim(), gid = $('#cGid').value.trim();
+        if (gid && !GID_RE.test(gid)) { cloudErr('A Google client ID ends in .apps.googleusercontent.com — copy it from Google Cloud → APIs & Services → Credentials.'); return; }
+        jset(CLOUD_LS, { url, key, gid });
         const c = cloudCfg();
         if (!c) { jset(CLOUD_LS, null); cloudErr('That does not look right: the URL should be like https://xxxx.supabase.co and the key is the long publishable/anon key.'); return; }
         sync.cfg = c; renderCloudBtn(); cloudModal();
@@ -3792,21 +4724,23 @@ function cloudSignInModal() {
   const up = cloudTab === 'up';
   openModal({
     title: 'Cloud sync',
-    body: `<p class="small cintro">Sign in to keep your lifts, programs, history and settings in step across your devices. Without an account everything stays on this device.</p>
+    body: `<p class="small cintro">Sign in to keep your program, 1RMs, history and settings on every device. A new device loads them the moment you sign in. Without an account everything stays on this device.</p>
+      ${gslotHTML(true)}
+      <div class="or">or use email</div>
       <div class="seg" role="group" aria-label="Sign in or create account" style="margin:0 0 14px">
         <button class="pchip ${up ? '' : 'on'}" data-action="m:tabin">Sign in</button><button class="pchip ${up ? 'on' : ''}" data-action="m:tabup">Create account</button></div>
       <div class="field"><label for="cEmail">Email</label><input id="cEmail" class="txt" type="email" inputmode="email" autocomplete="username" autocapitalize="off" spellcheck="false"></div>
       <div class="field"><label for="cPass">Password</label><input id="cPass" class="txt" type="password" autocomplete="${up ? 'new-password' : 'current-password'}" placeholder="${up ? 'At least 6 characters' : ''}"></div>
       <div class="cloud-err" id="cErr" role="alert"></div>
-      <button class="btn pri block" data-action="m:submit" id="cGo">${up ? 'Create account' : 'Sign in'}</button>
-      <div class="or">or</div>
-      <button class="btn block" data-action="m:google" id="cGoogle">Continue with Google</button>
+      <button class="btn block" data-action="m:submit" id="cGo">${up ? 'Create account' : 'Sign in with email'}</button>
       <div class="row between gap" style="margin-top:14px">${up ? '<span></span>' : '<button class="link" data-action="m:forgot">Forgot password?</button>'}<button class="link" data-action="m:guide">Setup guide</button></div>
-      ${sync.cfg.fromFile ? '' : '<div style="margin-top:10px"><button class="link" data-action="m:resetcfg">Use a different Supabase project</button></div>'}`,
+      <div class="row between gap wrap" style="margin-top:10px">${sync.cfg.gidFromFile ? '<span></span>' : `<button class="link" data-action="m:gid">${sync.cfg.gid ? 'Change Google client ID' : 'Add a Google client ID (one-tap button)'}</button>`}
+        ${sync.cfg.fromFile ? '' : '<button class="link" data-action="m:resetcfg">Use a different Supabase project</button>'}</div>`,
     actions: {
       __cloud: true, __cloudSign: true,
       tabin() { cloudModal('in'); }, tabup() { cloudModal('up'); },
       guide() { cloudGuideModal(); },
+      gid() { cloudGidModal(); },
       resetcfg() { jset(CLOUD_LS, null); sync.cfg = cloudCfg(); renderCloudBtn(); cloudModal(); },
       async submit(el) {
         const email = $('#cEmail').value.trim(), pw = $('#cPass').value;
@@ -3814,9 +4748,10 @@ function cloudSignInModal() {
         if (pw.length < 6) return cloudErr('Use a password of at least 6 characters.');
         cloudErr(''); el.disabled = true; const label = el.textContent; el.textContent = up ? 'Creating…' : 'Signing in…';
         try {
-          if (up) { const r = await cloudSignUp(email, pw); if (r === 'confirm') { cloudErr(`Almost there — we emailed a confirmation link to ${email}. Open it, then come back and sign in.`, true); return; } }
-          else await cloudSignIn(email, pw);
-          if (sync.auth && (!modalCtx || (modalCtx.actions && modalCtx.actions.__cloudSign))) cloudModal();
+          let r;
+          if (up) { r = await cloudSignUp(email, pw); if (r === 'confirm') { cloudErr(`Almost there — we emailed a confirmation link to ${email}. Open it, then come back and sign in.`, true); return; } }
+          else r = await cloudSignIn(email, pw);
+          if (r !== 'welcome' && sync.auth && (!modalCtx || (modalCtx.actions && modalCtx.actions.__cloudSign))) cloudModal();
         } catch (e) { cloudErr(authMessage(e)); }
         finally { el.disabled = false; el.textContent = label; }
       },
@@ -3834,18 +4769,24 @@ function cloudSignInModal() {
     },
     onMount(root) {
       $$('#cEmail,#cPass', root).forEach(i => i.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); const b = $('#cGo'); if (b) b.click(); } }));
+      try { gsiMount(); } catch (e) { /* the plain button stays */ }
     }
   });
 }
 function cloudAccountModal() {
-  const m = sync.meta, email = (sync.auth.user && sync.auth.user.email) || m.email || 'your account';
+  const m = sync.meta, au = sync.auth.user || {}, ac = S.account && S.account.uid === au.id ? S.account : {};
+  const email = au.email || ac.email || m.email || 'your account', nm = ac.name || au.name || '', ph = ac.photo || au.photo || '', prov = ac.provider || au.provider || '';
+  const me = deviceId(), devs = Object.keys(ac.devices || {}).sort((x, y) => (ac.devices[y].t || 0) - (ac.devices[x].t || 0));
   openModal({
     title: 'Cloud sync',
-    body: `<div class="card" style="margin-bottom:14px"><div class="muted xs">Signed in as</div><b style="word-break:break-all">${esc(email)}</b>
+    body: `<div class="card" style="margin-bottom:14px"><div class="acct"><span class="avatar" id="cAvatar" aria-hidden="true">${esc((nm || email).trim().charAt(0).toUpperCase() || '?')}${ph ? `<img src="${esc(ph)}" alt="" referrerpolicy="no-referrer">` : ''}</span>
+        <div style="min-width:0"><div class="muted xs">Signed in as</div><b style="word-break:break-word">${esc(nm || email)}</b>${nm ? `<div class="muted small" style="word-break:break-all">${esc(email)}</div>` : ''}
+        <span class="chip" style="margin-top:4px">${prov === 'google' ? 'Google account' : 'Email account'}</span></div></div>
         <div class="cstat" id="cStatus"><i class="cdot ${cloudDotClass()}"></i><span>${esc(cloudStatusText())}</span></div>
-        <div class="muted xs" id="cLive" style="margin-top:2px">${sync.live ? 'Live updates on' : 'Checking for changes every 45 s'}</div></div>
+        <div class="muted xs" id="cLive" style="margin-top:2px">${sync.live ? 'Live updates on' : 'Checking for changes every 45 s'}</div>
+        ${devs.length ? `<div class="muted xs" id="cDevs" style="margin-top:8px">${devs.length === 1 ? 'Signed in on' : 'Signed in on ' + devs.length + ' devices'}: ${devs.map(k => esc(ac.devices[k].n) + (k === me ? ' (this device)' : '')).join(' · ')}</div>` : ''}</div>
       <div class="row gap wrap" style="margin-bottom:14px"><button class="btn sm pri" data-action="m:now" id="cNow">Sync now</button><button class="btn sm" data-action="m:guide">Setup guide</button></div>
-      <p class="small muted" style="margin:0 0 10px">Synced: 1RMs and progression history, programs and which one is active, your position in them (from workout history), workout and run history, profile, schedule and settings. Not synced: the workout you are in the middle of, the coach chat, notification and screen-awake choices.</p>
+      <p class="small muted" style="margin:0 0 10px">Synced to this account: 1RMs and progression history, programs (including imported ones) and which one is active, your week and day (from workout history), workout and run history, profile, schedule, and settings including your rest-timer choices. Not synced: the workout you are in the middle of, the coach chat, notification and screen-awake choices.</p>
       <label class="switch"><input type="checkbox" id="cSyncKey" ${m.syncKey ? 'checked' : ''}><span>Sync my Gemini API key<small>Stored in your own private cloud account so every device can use the Coach. Turn off to keep the key on each device only (a copy already in the cloud stays until you delete it).</small></span></label>
       <div class="cloud-err" id="cErr" role="alert"></div>
       <div class="sec-t">Account</div>
@@ -3871,8 +4812,30 @@ function cloudAccountModal() {
       }
     },
     onMount(root) {
+      const av = $('#cAvatar img', root);                            // the photo fades in once it has loaded; until then (or if it never does) the initial shows
+      if (av) { av.addEventListener('load', () => av.classList.add('ok')); av.addEventListener('error', () => av.remove()); if (av.complete && av.naturalWidth) av.classList.add('ok'); }
       const sw = $('#cSyncKey', root);
       if (sw) sw.addEventListener('change', () => { sync.meta.syncKey = sw.checked; saveMeta(); try { syncScan(); } catch (e) { /* ignore */ } saveMeta(); syncSoon(300); });
+    }
+  });
+}
+function cloudGidModal() {
+  const cur = (jget(CLOUD_LS) || {}).gid || '';
+  openModal({
+    title: 'Google client ID',
+    body: `<p class="small cintro">The one-tap “Sign in with Google” button needs a Google OAuth <b>Web application</b> client ID. List the same ID in Supabase → Authentication → Providers → Google → Client IDs, and add this app’s address to the client’s <i>Authorised JavaScript origins</i> in Google Cloud.</p>
+      <div class="field"><label for="cGid">Client ID</label><input id="cGid" class="txt" autocapitalize="off" spellcheck="false" placeholder="1234567890-abc….apps.googleusercontent.com" value="${esc(cur)}"></div>
+      <div class="cloud-err" id="cErr" role="alert"></div>`,
+    footer: `<button class="btn ghost" data-action="m:back">Back</button><button class="btn pri grow" data-action="m:save">Save</button>`,
+    actions: {
+      __cloud: true,
+      back() { cloudModal(); },
+      save() {
+        const gid = $('#cGid').value.trim();
+        if (gid && !GID_RE.test(gid)) return cloudErr('A Google client ID ends in .apps.googleusercontent.com — copy it from Google Cloud → APIs & Services → Credentials.');
+        jset(CLOUD_LS, Object.assign({}, jget(CLOUD_LS), { gid }));
+        sync.cfg = cloudCfg(); gsi.failedUntil = 0; cloudModal();
+      }
     }
   });
 }
@@ -3929,7 +4892,9 @@ function cloudGuideModal() {
         <li><b>Allow your app address</b> — Authentication → URL Configuration: set <i>Site URL</i> to the address you open this app at (for example <code>https://yourname.github.io/autocoach/</code>) and add the same address followed by <code>**</code> under <i>Redirect URLs</i>.</li>
         <li><b>Paste the two values</b> into <code>AUTOCOACH_CLOUD</code> at the top of the script in <code>index.html</code> — then every device picks them up. (Or paste them in this sheet on each device.)</li>
         <li><i>Optional</i> — Authentication → Providers → Email: switch off “Confirm email” for instant sign-up.</li>
-        <li><i>Optional, Google sign-in</i> — Authentication → Providers → Google: add a Client ID and secret from a Google Cloud “Web application” OAuth client, and add the callback URL Supabase shows there to Google’s authorised redirect URIs.</li>
+        <li><i>Optional, “Sign in with Google”</i> — in Google Cloud Console → APIs &amp; Services → Credentials, create an <i>OAuth client ID</i> of type <b>Web application</b>. Under <i>Authorised JavaScript origins</i> add the address you open the app at (for example <code>https://yourname.github.io</code>, no path).</li>
+        <li><i>Google, in Supabase</i> — Authentication → Providers → Google: switch it on and paste that Client ID into <i>Client IDs</i> (add the secret too if you also want the plain redirect button to work, plus the callback URL Supabase shows into Google’s authorised redirect URIs).</li>
+        <li><i>Google, in the app</i> — set <code>googleClientId</code> in <code>AUTOCOACH_CLOUD</code> next to the other two values (or paste it into the Cloud sheet). The official Google button then appears on the Home screen and in the sign-in sheet.</li>
       </ol>
       <p class="muted">Sign-in links only work when the app is opened from an https address (GitHub Pages, Netlify…), not from a local file.</p>
       <div class="row between gap" style="margin:12px 0 6px"><b>SQL for step 3</b><button class="btn sm" data-action="m:copy" id="cCopy">Copy SQL</button></div>
@@ -3954,6 +4919,136 @@ function syncUnlink() {
   if (tok && sync.cfg) authCall('/logout', 'POST', null, tok, '?scope=local').catch(() => { /* ignore */ });
   sync.meta = freshMeta(); jset(SYNC_LS, null); sync.queue = []; sync.pendingCursor = null; sync.alert = null;
   cloudSignedOut(null);
+}
+
+/* ---- Google Identity Services (the official "Sign in with Google" button) + the new-device welcome ----
+   Google shows its own button and returns a signed ID token; Supabase verifies it and returns a session.
+   The raw nonce stays in memory; Google gets its SHA-256 hash, Supabase gets the raw value and re-hashes it.
+   If the button cannot load (offline, blocked, no client ID) a plain button starts the redirect flow instead. */
+const GSI_SRC = 'https://accounts.google.com/gsi/client', GCARD_LS = 'autocoach-lift:gcard';
+const gsi = { inited: '', nonce: '', busy: false, failedUntil: 0, initP: null };
+function gsiLoad() {
+  if (window.google && google.accounts && google.accounts.id) return Promise.resolve(true);
+  return new Promise(res => {
+    const old = document.querySelector('script[data-gsi-src]'); if (old) old.remove();
+    const el = document.createElement('script'); el.src = GSI_SRC; el.async = true; el.setAttribute('data-gsi-src', '1');
+    const t = setTimeout(() => res(!!(window.google && google.accounts && google.accounts.id)), 5000);
+    el.onload = () => { clearTimeout(t); res(!!(window.google && google.accounts && google.accounts.id)); };
+    el.onerror = () => { clearTimeout(t); res(false); };
+    document.head.appendChild(el);
+  });
+}
+const rndHex = n => { const a = new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(x => x.toString(16).padStart(2, '0')).join(''); };
+async function sha256Hex(str) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+function gsiInit() {
+  const gid = sync.cfg && sync.cfg.gid;
+  if (!gid || !(window.crypto && crypto.subtle && crypto.getRandomValues)) return Promise.resolve(false);
+  if (gsi.inited === gid) return Promise.resolve(true);
+  if (gsi.initP) return gsi.initP;
+  gsi.initP = (async () => {
+    try {
+      if (!(await gsiLoad())) return false;
+      gsi.nonce = rndHex(16);
+      google.accounts.id.initialize({ client_id: gid, callback: gsiCallback, nonce: await sha256Hex(gsi.nonce), ux_mode: 'popup', auto_select: false, cancel_on_tap_outside: true, itp_support: true });
+      gsi.inited = gid; return true;
+    } catch (e) { console.warn('Google sign-in could not start', e); return false; }
+    finally { gsi.initP = null; }
+  })();
+  return gsi.initP;
+}
+/** Replaces every Google slot on screen by the official button. Cheap no-op when there is none. */
+async function gsiMount() {
+  const slots = $$('[data-gsi]');
+  if (!slots.length || !sync.cfg || !sync.cfg.gid) return;
+  if (gsi.inited !== sync.cfg.gid) {
+    if (Date.now() < gsi.failedUntil) return;
+    if (!(await gsiInit())) {
+      gsi.failedUntil = Date.now() + 60000;                              // blocked or offline: show the plain button for a minute
+      $$('[data-gsi]').forEach(el => { el.classList.remove('wait'); if (!el.firstElementChild) el.innerHTML = gFallbackBtn(el.dataset.modal === '1'); });
+      return;
+    }
+  }
+  $$('[data-gsi]').forEach(el => {
+    if (el.dataset.gsiDone) return;
+    const keep = el.innerHTML;
+    try {
+      el.innerHTML = '';
+      const w = Math.max(200, Math.min(400, Math.floor(el.clientWidth || 280)));
+      google.accounts.id.renderButton(el, { type: 'standard', theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill', logo_alignment: 'left', width: w });
+      el.dataset.gsiDone = '1'; el.classList.remove('wait');
+    } catch (e) { el.innerHTML = keep || gFallbackBtn(el.dataset.modal === '1'); el.classList.remove('wait'); }
+  });
+}
+function gBusy(on) {
+  $$('.gslot').forEach(el => el.classList.toggle('busy', !!on));
+  const e = $('#cErr');
+  if (e) { if (on) cloudErr('Signing in with Google…', true); else if (e.textContent === 'Signing in with Google…') cloudErr(''); }   // never wipe an error that was just shown
+  else if (on) toast('Signing in with Google…', 'info', 1800);
+}
+async function gsiCallback(resp) {
+  const tok = resp && resp.credential;
+  if (!tok || gsi.busy) return;
+  gsi.busy = true; gBusy(true);
+  try {
+    const r = await cloudGoogleToken(tok, gsi.nonce);
+    if (!sync.auth) return;                                            // cancelled at the “combine your data?” question
+    if (r !== 'welcome') {
+      if (modalCtx && modalCtx.actions && modalCtx.actions.__cloudSign) cloudModal();
+      else toast('Signed in as ' + ((sync.auth.user && sync.auth.user.email) || 'your account') + ' — syncing', 'ok', 3200);
+    }
+  } catch (e) {
+    const msg = authMessage(e);
+    if ($('#cErr')) cloudErr(msg); else toast(msg, 'err', 5500);
+  } finally { gsi.busy = false; gBusy(false); }
+}
+/** Plain fallback inside a Google slot: starts the redirect flow (or the setup sheet when no cloud project is configured). */
+const gFallbackBtn = modal => `<button class="btn pri block gbtn" data-action="${modal ? 'm:google' : 'google-in'}"${modal ? ' id="cGoogle"' : ''}>Sign in with Google</button>`;
+/** With a client ID the slot stays an empty placeholder until Google's own button is painted (no flash of another button);
+    without one — or when Google cannot be reached — it holds the plain button. */
+const gslotHTML = modal => {
+  const ready = !!(gsi.inited && sync.cfg && gsi.inited === sync.cfg.gid), live = !!(sync.cfg && sync.cfg.gid) && Date.now() >= gsi.failedUntil;
+  return `<div class="gslot${live && !ready ? ' wait' : ''}" data-gsi data-modal="${modal ? 1 : 0}">${live || ready ? '' : gFallbackBtn(modal)}</div>`;
+};
+async function googleIn() {
+  if (!sync.cfg) return cloudModal();
+  try { await cloudGoogle(); } catch (e) { toast(authMessage(e), 'err', 5000); }
+}
+const gcardHidden = () => { const t = Number(jget(GCARD_LS)) || 0; return t > 0 && Date.now() - t < 7 * 864e5; };
+/** The prominent card: first-run screen ("first") and Home. Gone once signed in; “Maybe later” hides it for a week on this device. */
+function googleCardHTML(kind) {
+  if (sync.auth || gcardHidden()) return '';
+  const first = kind === 'first';
+  return `<section class="card gcard" id="gcard"><div class="gc-h">${icon('cloud', 24)}<div style="min-width:0"><b>${first ? 'Already training on another device?' : 'Keep your training on every device'}</b>
+    <p class="small muted">${first
+      ? 'Sign in with Google and your program, 1RMs, history and this week’s workout load straight away — nothing to re-enter or import.'
+      : 'Sign in with Google and your program, 1RMs, workout history and rest-timer settings follow your account. A new phone opens right where you stopped.'}</p></div></div>
+    ${gslotHTML(false)}
+    <div class="gc-f"><button class="link" data-action="gcard-email">Use email instead</button><button class="link" data-action="gcard-later">Maybe later</button></div></section>`;
+}
+
+/* ---- right after a sign-in on an empty device (or one told to take the account's data): land on the program ---- */
+const firstNameOf = () => { const n = String((S.account && S.account.name) || (sync.auth && sync.auth.user && sync.auth.user.name) || '').trim(); return n ? n.split(/\s+/)[0] : ''; };
+function cloudWelcome(fresh) {
+  if (!fresh || !sync.auth || !sync.meta || !sync.meta.uid) return null;
+  const who = firstNameOf(), hi = who ? ', ' + who : '';
+  const closeSign = () => { if (modalCtx && modalCtx.actions && modalCtx.actions.__cloudSign) closeModal(true); };
+  if (sync.welcomePending) {
+    closeSign();
+    toast('Signed in' + hi + ' — your program will load as soon as sync can reach the cloud', 'warn', 5200);
+    return 'welcome';
+  }
+  const p = S.programs.length ? activeProgram() : null;
+  if (!p) return null;                                                 // a brand-new account: nothing to load yet
+  closeSign();
+  if (S.session && !sessionHasLogged(S.session)) S.session = null;     // a draft made before the account's history arrived
+  const s = ensureSession();
+  S.tab = 'train'; save(true); render(); window.scrollTo(0, 0);
+  if (s) { const pr = getProgram(s.programId), wk = pr.blocks[s.b].weeks[s.w], day = wk.days[s.d]; toast('Welcome back' + hi + ' — loaded ' + pr.name + ': ' + wk.label + ', ' + day.name, 'ok', 6500); }
+  else toast('Welcome back' + hi + ' — ' + p.name + ' is loaded (every session is done; restart it when you like)', 'ok', 6500);
+  return 'welcome';
 }
 
 /* ---- program-scope helpers (swap / pair / add apply "today", "this block" or "whole program") ---- */
@@ -4062,13 +5157,16 @@ function supersetHTML(g) {
   </section>`;
 }
 function exerciseListHTML(s) {
-  const groups = ssGroups(s), shown = new Set();
+  const groups = ssGroups(s), shown = new Set(); let sec = '';
   return s.exercises.map((ex, ei) => {
     const g = groups.find(x => x.idx.includes(ei));
-    if (!g) return exerciseHTML(ex, ei);
-    if (shown.has(g.id)) return '';
+    if (g && shown.has(g.id)) return '';
+    const own = (g ? s.exercises[g.idx[0]].sec : ex.sec) || '';
+    let head = '';
+    if (own !== sec) { sec = own; if (own) head = `<div class="secH">${esc(own)}</div>`; }   // “Main lift”, “Accessories”… from imported programs
+    if (!g) return head + exerciseHTML(ex, ei);
     shown.add(g.id);
-    return supersetHTML(g);
+    return head + supersetHTML(g);
   }).join('');
 }
 const blankSet = last => ({ id: uid(), targetReps: last.targetReps, repsText: last.repsText, int: last.int ? Object.assign({}, last.int) : null, wIn: '', rIn: '', eff: null, done: false, targetWeight: null, weight: null, reps: null, e1rm: null, status: null, change: null });
@@ -4223,9 +5321,9 @@ function progStats(p) {
   return { blocks: p.blocks.length, weeks, sessions: flat.length, done: flat.filter(x => done.has(skey(x.b, x.w, x.d))).length };
 }
 function viewPrograms() {
-  let h = planSegHTML('programs') + `<div class="section-h" style="margin-top:4px"><h2>Programs</h2><button class="btn sm pri" data-action="new-program">${icon('plus', 15)} New</button></div>`;
+  let h = planSegHTML('programs') + `<div class="section-h" style="margin-top:4px"><h2>Programs</h2><button class="btn sm pri" data-action="new-program">${icon('plus', 15)} New</button></div>` + impCardHTML();
   if (!S.programs.length) {
-    return h + `<section class="card hero"><p class="muted">No programs yet. Paste or write one in a simple text format (or JSON) — blocks, weeks, sets × reps and intensity.</p>
+    return h + `<section class="card hero" id="impHero" ${imp.text ? 'hidden' : ''}><p class="muted">No programs yet. Paste your plan into the box above, write one in the simple text format (or JSON), or start from the sample.</p>
       <div class="stack" style="margin-top:14px"><button class="btn pri block" data-action="new-program">Create a program</button><button class="btn block" data-action="load-sample">Load the sample program</button></div></section>`;
   }
   const act = activeProgram();
@@ -5010,7 +6108,7 @@ function blockDetail(id, ds) {
   let extra = '';
   if ((b.type === 'lift' || b.type === 'cali') && S.programs.length) {
     try {
-      const s = ensureSession();
+      const ls = blockSession(b), s = ls ? createSession(ls.p, ls.b, ls.w, ls.d) : ensureSession();
       if (s) {
         const day = getProgram(s.programId).blocks[s.b].weeks[s.w].days[s.d], u = S.settings.units;
         const rows = s.exercises.map(e => {
@@ -5037,7 +6135,11 @@ function blockDetail(id, ds) {
       primary() {
         closeModal(true);
         if (b.type === 'run') runLogModal(sess && !sess.done ? sess.id : null);
-        else if (b.type === 'lift' || b.type === 'cali') setTab('train');
+        else if (b.type === 'lift' || b.type === 'cali') {
+          const ls = blockSession(b), cur = S.session;
+          if (!ls || (cur && cur.programId === ls.p.id && cur.b === ls.b && cur.w === ls.w && cur.d === ls.d)) setTab('train');
+          else startSession(ls.p, ls.b, ls.w, ls.d);
+        }
       }
     }
   });
@@ -5141,6 +6243,317 @@ function liftModal(key, presetName) {
   });
 }
 
+/* ---------------------------------------------------------------------
+   Raw-text importer — the paste box in the Programs tab.
+   Paste → smartParseProgram → live preview → program + weekly schedule blocks.
+   --------------------------------------------------------------------- */
+const IMP_EXAMPLE = [
+  '💪 UPPER / LOWER STRENGTH — 4 WEEK PROGRAM',
+  '',
+  '🗓️ DAY 1 — LOWER BODY (Mon)',
+  'Block A — Main Lift',
+  'Back Squat — 4 sets x 5 reps @ RPE 8 (rest 3 min)',
+  'Block B — Accessories',
+  'Superset: Romanian Deadlift 3 x 8 + Walking Lunge 3 x 10 each leg (rest 90 sec)',
+  'Standing Calf Raise 3 x 15',
+  'Block C — Core',
+  'Plank 3 x 45 sec',
+  '',
+  '🗓️ DAY 2 — UPPER BODY (Wed)',
+  'Block A — Main Lift',
+  'Bench Press — 4 x 6 @ 75% — rest 2-3 min',
+  'Block B — Pull',
+  'Superset: Pull-up 3 x 8 + Dip 3 x 10 | rest 20/90',
+  'Face Pull 3 x 15',
+  'Block C — Arms',
+  'Superset: Biceps Curl 3 x 12 + Triceps Pushdown 3 x 12 (rest 60 sec)',
+  '',
+  '🗓️ DAY 3 — FULL BODY (Fri)',
+  'Block A — Main Lift',
+  'Deadlift 3 x 3 @ RPE 8.5, rest 3-4 min',
+  'Block B — Accessories',
+  'Overhead Press 3 x 8 @ RPE 7',
+  'Barbell Row 3 x 10 @ RPE 7'
+].join('\n');
+
+/** Importer state. It lives outside S so a half-pasted plan survives tab switches and re-renders. */
+const imp = { text: '', name: '', weeks: 0, res: null, how: '', plan: [], planKey: '', addSched: true, activate: true, start: '', tm: 0 };
+
+const IMP_MAX = 60000;
+const IMP_PATTERN = { 1: [1], 2: [1, 4], 3: [1, 3, 5], 4: [1, 2, 4, 5], 5: [1, 2, 3, 5, 6], 6: [1, 2, 3, 4, 5, 6], 7: [1, 2, 3, 4, 5, 6, 0] };
+
+/** Facts for the schedule planner when the parser did not supply any (JSON or the app's own format). */
+function impFallbackMeta(r) {
+  const b = r.program.blocks[0], w = b && b.weeks[0];
+  return { slots: w ? w.days.map((d, i) => ({ name: d.name, wd: null, rest: false, pos: i, min: impDayMinutes(d.exercises) })) : [], notes: [], skipped: [], rpe: [], sections: false, explicitWeeks: true, wdHint: [] };
+}
+
+/** Parse imp.text into imp.res. JSON and the app's own DAY: format are recognised first; everything else goes to the smart reader. */
+function impRun() {
+  const raw = String(imp.text || ''), t = raw.slice(0, IMP_MAX).trim();
+  imp.res = null; imp.how = '';
+  if (!t) return;
+  let r = null;
+  try {
+    if (t[0] === '{') { r = parseInput(t, ''); imp.how = 'json'; }
+    else {
+      if (/^[ \t]*DAY[ \t]*:/im.test(t)) {
+        const s = parseProgramText(t);
+        if (!s.errors.length && s.stats.sessions) { r = s; imp.how = 'strict'; }
+      }
+      if (!r) { r = smartParseProgram(t, { weeks: imp.weeks, units: S.settings.units, hasLift: n => !!getLift(n) }); imp.how = 'smart'; }
+    }
+  } catch (e) {
+    r = finishParse({ name: null, blocks: [] }, [{ line: 0, msg: 'I couldn’t read that text (' + String(e && e.message || e).slice(0, 80) + '). Try pasting it again.' }], []);
+    imp.how = 'smart';
+  }
+  if (!r.meta) r.meta = impFallbackMeta(r);
+  if (raw.length > IMP_MAX) r.warnings.push({ line: 0, msg: 'Only the first ' + IMP_MAX.toLocaleString() + ' characters were read.' });
+  imp.res = r;
+  impPlanReset(r);
+}
+
+/**
+ * Which weekday each training day of week 1 lands on:
+ * an explicit weekday in the text → the position in a week that lists its rest days (first entry = Monday)
+ * → a weekday list mentioned in the text (“Mon/Tue/Thu/Fri”) → an evenly spread pattern.
+ */
+function impPlanSlots(r) {
+  const all = r.meta.slots, tr = all.filter(s => !s.rest), n = tr.length;
+  const hasRest = all.some(s => s.rest) && all.length <= 7;
+  const hint = r.meta.wdHint && r.meta.wdHint.length === n ? r.meta.wdHint : null;
+  const pat = IMP_PATTERN[Math.min(n, 7)] || [];
+  return tr.map((s, i) => {
+    let wd = null;
+    if (s.wd != null) wd = s.wd;
+    else if (hasRest) wd = (all.indexOf(s) + 1) % 7;
+    else if (hint) wd = hint[i];
+    else if (n <= 7) wd = pat[i];
+    return { i, name: s.name, min: s.min, wd: wd == null ? null : wd, user: false };
+  });
+}
+function impPlanReset(r) {
+  const plan = impPlanSlots(r), key = plan.map(p => p.name).join('|') + '#' + r.meta.slots.length;
+  if (key === imp.planKey) plan.forEach((p, i) => { const o = imp.plan[i]; if (o && o.user) { p.wd = o.wd; p.user = true; } });   // keep weekdays the user picked by hand
+  imp.plan = plan; imp.planKey = key;
+}
+
+/** Start minute for a training day: your chosen time, else 45 min after work ends (never later than 8 pm), else 5:30 pm. */
+function impStartFor(wd) {
+  if (imp.start) return hm(imp.start);
+  const P = S.profile, works = P.workKind !== 'none' && Array.isArray(P.workDays) && P.workDays.includes(wd);
+  return works ? Math.min(Math.round((hm(P.workEnd) + 45) / 15) * 15, 20 * 60) : 17 * 60 + 30;
+}
+/** Weekly lift blocks for the calendar; each remembers its program and which day of the week it stands for. */
+function impScheduleBlocks(p, plan) {
+  const out = [], busy = {};
+  plan.filter(x => x.wd != null).forEach(x => {
+    const dur = clamp(Math.round(x.min) || 60, 30, 150);
+    let st = impStartFor(x.wd);
+    if (busy[x.wd] != null && st < busy[x.wd]) st = Math.round((busy[x.wd] + 30) / 15) * 15;      // two sessions on one weekday: stack them
+    st = Math.min(st, 24 * 60 - dur - 15);
+    busy[x.wd] = st + dur;
+    out.push(cleanBlock(newBlock({ days: [x.wd], start: hmStr(st), dur, type: 'lift', title: x.name, auto: false, src: 'import', prog: p.id, di: x.i })));
+  });
+  return out;
+}
+
+/** A schedule block made by the importer → the program session it stands for: the first unfinished one for its day of the week. */
+function blockSession(b) {
+  const p = b && b.prog ? getProgram(b.prog) : null; if (!p) return null;
+  const done = doneKeys(p), all = flatSessions(p);
+  const hit = all.find(x => x.d === b.di && !done.has(skey(x.b, x.w, x.d))) || nextSession(p);
+  return hit ? { p, b: hit.b, w: hit.w, d: hit.d } : null;
+}
+
+/* ---- rendering ---- */
+const impSecs = n => n % 60 === 0 ? `${n / 60} min` : n >= 120 ? `${Math.floor(n / 60)} min ${n % 60} s` : `${n} s`;
+const impRestLabel = r => r.b != null && r.a != null ? `rest ${impSecs(r.b)} between · ${impSecs(r.a)} after` : r.a != null ? `rest ${impSecs(r.a)}` : `rest ${impSecs(r.b)} between`;
+function impDayHTML(d) {
+  const letters = new Map(), cnt = {}; let sec = '';
+  d.exercises.forEach(ex => { if (ex.ss && !letters.has(ex.ss)) letters.set(ex.ss, String.fromCharCode(65 + letters.size)); });
+  let h = `<div class="impDay"><div class="impDn">${esc(d.name)}</div>`;
+  d.exercises.forEach(ex => {
+    if ((ex.sec || '') !== sec) { sec = ex.sec || ''; if (sec) h += `<div class="secH">${esc(sec)}</div>`; }
+    let tag = '';
+    if (ex.ss && letters.has(ex.ss)) { const L = letters.get(ex.ss); cnt[L] = (cnt[L] || 0) + 1; tag = `<span class="ssb">${L}${cnt[L]}</span>`; }
+    const extra = [ex.rest ? impRestLabel(ex.rest) : '', ...(ex.cues || []).slice(0, 2)].filter(Boolean).join(' · ');
+    h += `<div class="impEx"><span class="nm">${tag}${esc(ex.name)}</span><span class="rx">${esc(prescText(ex.sets))}</span>${extra ? `<span class="ex2">${esc(extra)}</span>` : ''}</div>`;
+  });
+  return h + '</div>';
+}
+function impTreeHTML(p) {
+  let h = '';
+  p.blocks.slice(0, 8).forEach((b, bi) => {
+    const w0 = b.weeks[0], dl = b.weeks.filter(w => w.deload).length;
+    h += `<details class="impBlk" ${bi === 0 ? 'open' : ''}><summary><b>${esc(b.name)}</b><span class="muted xs">${plural(b.weeks.length, 'week')}${dl ? ` · ${dl} deload` : ''} · ${plural(w0.days.length, 'day')}/week</span></summary>${w0.days.map(impDayHTML).join('')}</details>`;
+  });
+  if (p.blocks.length > 8) h += `<div class="muted xs" style="margin-top:6px">…and ${p.blocks.length - 8} more blocks</div>`;
+  return h;
+}
+const IMP_HOW = { smart: 'Read as free text', strict: 'Recognised the app’s own format', json: 'Read as JSON' };
+function impPreviewHTML() {
+  const r = imp.res;
+  if (!r) return '<div class="muted small">A live preview appears here as soon as there is text.</div>';
+  const st = r.stats;
+  let h = '<div class="preview">';
+  if (r.errors.length) h += `<div class="err">${r.errors.slice(0, 5).map(e => `<div>${e.line ? 'Line ' + e.line + ': ' : ''}${esc(e.msg)}</div>`).join('')}${r.errors.length > 5 ? `<div>…and ${r.errors.length - 5} more</div>` : ''}</div>`;
+  else h += `<div class="okc">✓ ${plural(st.blocks, 'block')} · ${plural(st.weeks, 'week')} · ${plural(st.sessions, 'session')} · ${plural(st.exercises, 'exercise')}</div><div class="muted xs" style="margin-top:2px">${esc(IMP_HOW[imp.how] || '')}</div>`;
+  if (r.warnings.length) h += `<div class="wn">${r.warnings.slice(0, 5).map(w => `<div>${w.line ? 'Line ' + w.line + ': ' : ''}${esc(w.msg)}</div>`).join('')}${r.warnings.length > 5 ? `<div>…and ${r.warnings.length - 5} more notes</div>` : ''}</div>`;
+  if (!r.errors.length && st.sessions) {
+    if (r.meta.notes.length) h += `<div class="impNotes">${r.meta.notes.map(n => `<div>• ${esc(n)}</div>`).join('')}</div>`;
+    h += `<details class="impTreeW" open><summary>What I found <span class="muted xs">week 1 of each block — review before importing</span></summary>${impTreeHTML(r.program)}</details>`;
+  }
+  return h + '</div>';
+}
+function impPlanHTML() {
+  const r = imp.res, ok = !!(r && !r.errors.length && r.stats.sessions);
+  let h = '';
+  if (ok) {
+    const miss = missingFor(r.program);
+    if (miss.length) h += `<div class="muted small" style="margin-top:10px">No 1RM yet for <b style="color:#fff">${esc(miss.slice(0, 6).join(', '))}${miss.length > 6 ? ` +${miss.length - 6}` : ''}</b> — you can add them right after importing.</div>`;
+    h += `<div class="sec-t">Calendar</div>
+      <label class="switch"><input type="checkbox" id="impSched" ${imp.addSched ? 'checked' : ''}><span>Add the training days to my schedule<small>Weekly blocks in the Schedule tab that open the right workout</small></span></label>`;
+    if (imp.addSched) {
+      h += `<div class="impPlan">${imp.plan.length ? imp.plan.map((x, i) => `<div class="impPd"><div style="min-width:0;flex:1"><b class="ell">${esc(x.name)}</b><div class="muted xs">about ${durText(x.min)}</div></div>
+        <select class="txt imp-wd" data-i="${i}" aria-label="Weekday for ${esc(x.name)}"><option value="">Not scheduled</option>${[1, 2, 3, 4, 5, 6, 0].map(d => `<option value="${d}" ${x.wd === d ? 'selected' : ''}>${DAY_SHORT[d]}</option>`).join('')}</select></div>`).join('') : '<div class="muted small">No training days to schedule.</div>'}</div>
+        <div class="field" style="margin:10px 0 0"><label for="impStart">Start time</label><input id="impStart" class="txt" type="time" value="${esc(imp.start)}"><div class="hint">Empty = 45 min after work ends, otherwise 5:30 PM.</div></div>`;
+    }
+    h += `<label class="switch" style="margin-top:14px"><input type="checkbox" id="impAct" ${imp.activate ? 'checked' : ''}><span>Make it my active program<small>Train opens on week 1, day 1</small></span></label>`;
+  }
+  return h + `<button class="btn pri block" data-action="imp-import" ${ok ? '' : 'disabled'}>${ok ? `Import ${plural(r.stats.sessions, 'session')}` : 'Import program'}</button>`;
+}
+function impCardHTML() {
+  if (imp.text) impRun();                                           // lifts or units may have changed since the last look
+  const ph = '🗓️ DAY 1 — LOWER&#10;Block A — Main lift&#10;Back Squat 4 sets x 5 reps @ RPE 8 (rest 3 min)&#10;Block B&#10;Superset: Lunge 3 x 10 + Calf Raise 3 x 15 (rest 90 sec)&#10;&#10;🗓️ DAY 2 — UPPER&#10;Bench Press 4 x 6 @ 75%, rest 2-3 min';
+  return `<section class="card impCard" aria-labelledby="impH">
+    <div class="impHead"><span class="ic" aria-hidden="true">${icon('list', 20)}</span><div style="min-width:0"><h3 id="impH">Import from text</h3>
+      <div class="muted small">Paste a plan from a coach, a PDF, a chat or your notes. I read days, blocks, supersets, sets × reps, intensity and rest, then build the workouts and your weekly schedule.</div></div></div>
+    <div class="impTools"><button class="btn sm" data-action="imp-paste">Paste</button><button class="btn sm ghost" data-action="imp-example">${icon('spark', 14)} Try an example</button>${imp.text ? '<button class="btn sm ghost" data-action="imp-clear">Clear</button>' : ''}</div>
+    <textarea id="impText" class="code impTa${imp.text ? ' has' : ''}" rows="${imp.text ? 12 : 6}" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Raw training program text" placeholder="${ph}">${esc(imp.text)}</textarea>
+    <div class="grid2 impOpts"><div class="field"><label for="impName">Name</label><input id="impName" class="txt" maxlength="60" autocomplete="off" value="${esc(imp.name)}" placeholder="${esc(imp.res && imp.res.program.name ? imp.res.program.name : 'Auto')}"></div>
+      <div class="field"><label for="impWeeks">Weeks per block</label><input id="impWeeks" class="txt" inputmode="numeric" maxlength="2" value="${imp.weeks || ''}" placeholder="Auto"></div></div>
+    <div class="hint" style="margin-top:8px">Weeks per block only applies when the text has no week numbers. Auto reads “12-week” from the title, otherwise 1.</div>
+    <div id="impPrev" aria-live="polite">${impPreviewHTML()}</div>
+    <div id="impPlan">${impPlanHTML()}</div>
+  </section>`;
+}
+
+/** Re-parse and repaint only the preview and the planner, so the box keeps focus while you type. */
+function impRefresh() {
+  clearTimeout(imp.tm);
+  impRun();
+  const p = $('#impPrev'), a = $('#impPlan'), nm = $('#impName'), ta = $('#impText');
+  if (p) p.innerHTML = impPreviewHTML();
+  if (a) a.innerHTML = impPlanHTML();
+  if (nm) nm.placeholder = imp.res && imp.res.program.name ? imp.res.program.name : 'Auto';
+  if (ta) { ta.classList.toggle('has', !!imp.text); }
+  const hr = $('#impHero'); if (hr) hr.hidden = !!imp.text;                // the empty-state card steps aside while there is something to preview
+  const bar = $('.impTools'); if (bar) { const c = bar.querySelector('[data-action="imp-clear"]'); if (imp.text && !c) bar.insertAdjacentHTML('beforeend', '<button class="btn sm ghost" data-action="imp-clear">Clear</button>'); else if (!imp.text && c) c.remove(); }
+}
+function impSetText(t) {
+  imp.text = t;
+  const ta = $('#impText'); if (ta) { ta.value = t; ta.rows = t ? 12 : 6; }
+  impRefresh();
+}
+
+/* ---- import ---- */
+function impCommit() {
+  const r = imp.res;
+  if (!r || r.errors.length || !r.stats.sessions) { toast('Nothing to import yet — fix the problems shown first', 'warn'); return; }
+  let activate = imp.activate;
+  if (activate && S.session && sessionHasLogged(S.session) && !confirm('You have sets logged in the current workout. Discard them and switch to the new program?')) activate = false;
+  const base = (imp.name.trim() || r.program.name || 'Imported program').replace(/\s+/g, ' ').slice(0, 60);
+  let name = base, k = 2;
+  while (S.programs.some(p => p.name.toLowerCase() === name.toLowerCase())) name = `${base} (${k++})`;
+  const p = { id: uid(), name, cycle: 1, created: Date.now(), blocks: clone(r.program.blocks), src: 'text' };
+  S.programs.push(p);
+  if (activate) { S.activeProgramId = p.id; S.session = null; }
+  else if (!S.activeProgramId || !getProgram(S.activeProgramId)) { S.activeProgramId = p.id; activate = true; }
+  let planned = [];
+  if (imp.addSched) {
+    planned = impScheduleBlocks(p, imp.plan);
+    if (planned.length) S.sched.blocks = S.sched.blocks.filter(b => b.src !== 'import').concat(planned);   // a newer import replaces the older imported week
+  }
+  const stats = Object.assign({}, r.stats), miss = missingFor(p);
+  imp.text = ''; imp.name = ''; imp.res = null; imp.plan = []; imp.planKey = '';
+  save(true); render(); window.scrollTo(0, 0);
+  impDoneModal(p, stats, planned, activate, miss);
+}
+function impDoneModal(p, st, planned, activate, miss) {
+  const u = S.settings.units;
+  openModal({
+    title: 'Program imported 🎉',
+    body: `<div class="kv" style="margin-top:0"><div><span>Blocks</span><b>${st.blocks}</b></div><div><span>Weeks</span><b>${st.weeks}</b></div><div><span>Sessions</span><b>${st.sessions}</b></div></div>
+      <p class="small" style="margin:12px 0 0"><b>${esc(p.name)}</b> ${activate ? 'is now your active program.' : 'was added. Activate it from the list when you are ready.'}</p>
+      ${planned.length ? `<div class="sec-t">On your calendar every week</div>${planned.map(b => `<div class="hist-row"><span><b>${DAY_SHORT[b.days[0]]}</b> ${esc(b.title)}</span><span class="muted small">${t12(b.start)} · ${durText(b.dur)}</span></div>`).join('')}` : ''}
+      ${miss.length ? `<div class="sec-t">Add your 1RMs</div><div class="muted small">Percent-based targets need a max. Enter a recent best (${u}) — you can change it later in Lifts.</div>${miss.slice(0, 8).map(n => `<div class="miss-row"><span class="grow" style="min-width:0;overflow:hidden;text-overflow:ellipsis">${esc(n)}</span><input class="txt" inputmode="decimal" placeholder="${u}" aria-label="1RM for ${esc(n)}"><button class="btn sm pri" data-action="m:lift" data-name="${esc(n)}">Save</button></div>`).join('')}${miss.length > 8 ? `<div class="hint">…and ${miss.length - 8} more in the Lifts tab.</div>` : ''}` : ''}`,
+    footer: `${planned.length ? '<button class="btn ghost" data-action="m:sched">Open schedule</button>' : ''}<button class="btn pri grow" data-action="m:go">${activate ? 'Start training' : 'Done'}</button>`,
+    actions: {
+      lift(el) {
+        const row = el.closest('.miss-row'), v = num($('input', row).value), n = el.dataset.name;
+        if (!(v > 0)) { toast('Enter a 1RM greater than 0', 'warn'); return; }
+        S.lifts[keyOf(n)] = newLift(n, v);
+        save(true); render(true);
+        row.innerHTML = `<span class="grow">${esc(n)}</span><span class="chip acc">${icon('check', 12)} ${fmt(v)} ${u}</span>`;
+      },
+      sched() { closeModal(true); setTab('sched'); },
+      go() { closeModal(true); if (activate) { ensureSession(); setTab('train'); } }
+    }
+  });
+}
+
+const IMP_ACTIONS = {
+  'imp-example': () => {
+    if (imp.text.trim() && imp.text.trim() !== IMP_EXAMPLE && !confirm('Replace what you pasted with the example?')) return;
+    impSetText(IMP_EXAMPLE);
+    toast('Example loaded — check the preview below, then import', 'ok', 3200);
+  },
+  'imp-paste': async () => {
+    try {
+      const t = await navigator.clipboard.readText();
+      if (!String(t).trim()) { toast('The clipboard is empty', 'warn'); return; }
+      impSetText(t);
+    } catch (e) {
+      toast('Your browser blocked clipboard access — tap the box, then long-press and choose Paste', 'warn', 4800);
+      const ta = $('#impText'); if (ta) ta.focus();
+    }
+  },
+  'imp-clear': () => { impSetText(''); },
+  'imp-import': () => impCommit(),
+  'imp-focus': () => {
+    setTab('programs');
+    setTimeout(() => { const t = $('#impText'); if (t) { t.scrollIntoView({ block: 'center' }); t.focus({ preventScroll: true }); } }, 80);
+  }
+};
+
+document.addEventListener('input', e => {
+  const t = e.target; if (!t || !t.id) return;
+  if (t.id === 'impText') { imp.text = t.value; clearTimeout(imp.tm); imp.tm = setTimeout(impRefresh, 280); }
+  else if (t.id === 'impName') imp.name = t.value;
+  else if (t.id === 'impWeeks') { const n = parseInt(t.value, 10); imp.weeks = n >= 1 ? Math.min(n, 52) : 0; clearTimeout(imp.tm); imp.tm = setTimeout(impRefresh, 280); }
+});
+document.addEventListener('change', e => {
+  const t = e.target; if (!t) return;
+  if (t.id === 'impSched') { imp.addSched = t.checked; const a = $('#impPlan'); if (a) a.innerHTML = impPlanHTML(); }
+  else if (t.id === 'impAct') imp.activate = t.checked;
+  else if (t.id === 'impStart') imp.start = t.value || '';
+  else if (t.id === 'impWeeks') t.value = imp.weeks || '';
+  else if (t.classList && t.classList.contains('imp-wd')) { const x = imp.plan[+t.dataset.i]; if (x) { x.wd = t.value === '' ? null : +t.value; x.user = true; } }
+});
+
+/** Remember the caret in the importer's fields so a re-render (cloud sync, a timer) does not drop it. */
+function impFocusKeeper() {
+  const a = document.activeElement;
+  if (!a || !/^imp(Text|Name|Weeks|Start)$/.test(a.id || '')) return null;
+  let s = null, z = null;
+  try { s = a.selectionStart; z = a.selectionEnd; } catch (e) { /* time inputs have no selection */ }
+  return () => {
+    const n = document.getElementById(a.id); if (!n) return;
+    n.focus({ preventScroll: true });
+    if (s != null) { try { n.setSelectionRange(s, z); } catch (e) { /* ignore */ } }
+  };
+}
 /* ---- Program editor ---- */
 function previewHTML(r) {
   if (!r.stats.sessions && !r.errors.length) return '<div class="muted">Write or paste a program above — a live preview appears here.</div>';
@@ -5331,9 +6744,13 @@ function loadSample(key) {
 }
 
 const A = {
+  ...IMP_ACTIONS,
   'tab': el => setTab(el.dataset.tab),
   'open-settings': () => settingsModal(),
   'open-cloud': () => cloudModal(),
+  'google-in': () => googleIn(),
+  'gcard-email': () => cloudModal('in'),
+  'gcard-later': () => { jset(GCARD_LS, Date.now()); render(true); },
   'hist-f': el => { histFilter = el.dataset.f; render(true); },
   'blk': el => blockDetail(el.dataset.id, el.dataset.date),
   'blk-new': () => blockModal(null, { days: [new Date().getDay()] }),
@@ -5374,6 +6791,7 @@ const A = {
     if (!confirm(`Delete "${p.name}"? Workout history is kept.`)) return;
     S.programs = S.programs.filter(x => x.id !== p.id);
     if (S.session && S.session.programId === p.id) S.session = null;
+    S.sched.blocks = S.sched.blocks.filter(b => !(b.src === 'import' && b.prog === p.id));
     if (S.activeProgramId === p.id) S.activeProgramId = S.programs[0] ? S.programs[0].id : null;
     save(true); render(true);
   },
@@ -5587,7 +7005,9 @@ window.__autocoach = {
   lowPct, lowW, sugOf, stepW, stepInc, adjustSet, setRowHTML, exportJSON, importJSONText, backupRowHTML, setLowE, liveTarget, logSet,
   loadSample, TIER_INFO, TIER_KEYS, tierCfg, tierPct, calcTierPct, tierRangeText, weekCtx, sessionCtx, setCtx, intPct, intFull, targetFor, migrateTiers, createSession, getProgram,
   callGemini, GEMINI_DEFAULT,
-  finishWorkout, ensureSession, nextSession, doneKeys, activeProgram, sync, syncScan, syncRun, syncSnapshot, syncApplyRows, syncApplyQueue, cloudCfg, cloudModal, cloudStatusText, hashOf, canon, mergeLift, cloudSignOut, cloudNow, loadMeta, SYNC_SQL, AUTOCOACH_CLOUD_PRESENT: () => typeof AUTOCOACH_CLOUD,
+  finishWorkout, ensureSession, nextSession, doneKeys, activeProgram, sync, syncScan, syncRun, syncSnapshot, syncApplyRows, syncApplyQueue, cloudCfg, cloudModal, cloudStatusText, hashOf, canon, mergeLift, cloudSignOut, cloudNow, loadMeta, SYNC_SQL, AUTOCOACH_CLOUD_PRESENT: () => typeof AUTOCOACH_CLOUD, gsi, gsiMount, gsiCallback, cloudGoogleToken, cloudProfileTouch, cloudWelcome, googleCardHTML, deviceId, deviceName, mergeAcct, syncSettled, makeSession,
+  smartParseProgram, impDayMinutes, parseProgramText, serializeProgram, parseInput,
+  imp, impRun, impRefresh, impSetText, impPlanSlots, impScheduleBlocks, impCommit, blockSession, IMP_EXAMPLE,
   timerLeft: () => S.timer ? Math.ceil((S.timer.end - Date.now()) / 1000) : 0
 };
 
